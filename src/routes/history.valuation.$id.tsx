@@ -11,7 +11,10 @@ import {
   ArrowLeft, Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
   Loader2, Sparkles, Crosshair, Wrench,
 } from "lucide-react";
-import type { FinalDecision, ValuationOutput } from "@/lib/valuation";
+import type { FinalDecision, Finding, InspectionScores, ValuationOutput } from "@/lib/valuation";
+import type { BurdenResult } from "@/lib/pricing";
+import { computeDecisionTrust } from "@/lib/decision-trust";
+import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 
 export const Route = createFileRoute("/history/valuation/$id")({
   component: ValuationDetailPage,
@@ -29,7 +32,14 @@ interface SavedValuation {
   asking_price: number | null;
   decision: string | null;
   negotiation_advice: string | null;
-  ai_output: { ai?: { summary?: string; negotiation_advice?: string }; deterministic?: FinalDecision; valuation?: ValuationOutput } | null;
+  ai_output: {
+    ai?: { summary?: string; negotiation_advice?: string };
+    deterministic?: FinalDecision;
+    valuation?: ValuationOutput;
+    findings?: Finding[];
+    scores?: InspectionScores;
+    burden_cad?: BurdenResult;
+  } | null;
 }
 
 function ValuationDetailPage() {
@@ -113,6 +123,20 @@ function ValuationDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Decision Trust block — rebuilt deterministically from the saved
+              inspection signal so valuation feels as transparent as inspection. */}
+          {fd && val.ai_output?.scores && val.ai_output?.valuation && (() => {
+            const trust = computeDecisionTrust({
+              decision: fd,
+              scores: val.ai_output!.scores!,
+              valuation: val.ai_output!.valuation!,
+              findings: val.ai_output!.findings ?? [],
+              burden: val.ai_output!.burden_cad ?? null,
+              asking_price: val.asking_price,
+            });
+            return <DecisionTrustBlock trust={trust} />;
+          })()}
 
           <Card className="mb-4 bg-gradient-card shadow-card">
             <CardContent className="p-5">

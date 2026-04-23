@@ -18,6 +18,8 @@ import {
   loadProgress,
   saveProgress,
   clearProgress,
+  fetchRemoteProgress,
+  pushRemoteProgress,
 } from "@/lib/repair-engine";
 import type { RepairWorkflow } from "@/lib/valuation";
 
@@ -25,6 +27,8 @@ import type { RepairWorkflow } from "@/lib/valuation";
  * Step Engine — checklist-style, navigable repair walkthrough.
  *
  * - Persists progress per (workflow, issue) in localStorage so users can resume.
+ * - Syncs progress to the `sessions` table for cross-device resume when a
+ *   userId is provided. Local writes are debounced before being pushed up.
  * - Shows step number, title, instruction, why it matters, tools, warnings.
  * - Visible progress bar + Next / Back / Mark complete CTAs.
  */
@@ -32,11 +36,17 @@ export function StepEngine({
   workflow,
   issue,
   steps,
+  userId,
+  vehicleId,
   onAllComplete,
 }: {
   workflow: RepairWorkflow;
   issue?: string;
   steps: EngineStep[];
+  /** When provided, progress also syncs to the database for cross-device resume. */
+  userId?: string | null;
+  /** Optional vehicle scope so progress is tracked per vehicle. */
+  vehicleId?: string | null;
   onAllComplete?: () => void;
 }) {
   const total = steps.length;
@@ -47,10 +57,42 @@ export function StepEngine({
   }, [workflow, issue, total]);
 
   const [progress, setProgress] = useState<RepairProgress>(initial);
+  const [syncedRemote, setSyncedRemote] = useState(false);
 
+  // On mount: try to pull a fresher copy from the server. Server wins if newer
+  // than the local copy — this is what enables cross-device resume.
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) {
+      setSyncedRemote(true);
+      return;
+    }
+    (async () => {
+      const remote = await fetchRemoteProgress(userId, workflow, issue, vehicleId ?? null);
+      if (cancelled) return;
+      if (remote && remote.total === total && remote.updated_at > progress.updated_at) {
+        setProgress(remote);
+        saveProgress(remote);
+      }
+      setSyncedRemote(true);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, workflow, issue, vehicleId, total]);
+
+  // Local persistence — instant, every change.
   useEffect(() => {
     saveProgress(progress);
   }, [progress]);
+
+  // Remote sync — debounced. Only after we've reconciled with the server once.
+  useEffect(() => {
+    if (!userId || !syncedRemote) return;
+    const t = window.setTimeout(() => {
+      void pushRemoteProgress(userId, progress, vehicleId ?? null);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [progress, userId, vehicleId, syncedRemote]);
 
   const idx = Math.min(progress.current_index, total - 1);
   const step = steps[idx];
