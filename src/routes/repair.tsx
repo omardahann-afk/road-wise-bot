@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RepairWorkflow } from "@/lib/valuation";
 import { estimateRepairCost, type IssueType, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { StepEngine } from "@/components/repair/step-engine";
+import { normalizeAiSteps, FALLBACK_STEPS } from "@/lib/repair-engine";
 
 // Maps repair workflow → pricing IssueType (deterministic).
 const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {

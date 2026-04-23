@@ -21,7 +21,9 @@ import {
   Sparkles,
   AlertTriangle,
 } from "lucide-react";
-import type { Finding, FinalDecision, ValuationOutput } from "@/lib/valuation";
+import type { Finding, FinalDecision, ValuationOutput, InspectionScores } from "@/lib/valuation";
+import { computeDecisionTrust } from "@/lib/decision-trust";
+import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 
 export const Route = createFileRoute("/history/inspection/$id")({
   component: InspectionDetailPage,
@@ -179,6 +181,35 @@ function InspectionDetailPage() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Decision Trust block — confidence + signals + risks (rehydrated from saved data) */}
+          {fd && insp.scores?.overall_score !== undefined && val && (
+            <DecisionTrustBlock
+              trust={computeDecisionTrust({
+                decision: fd,
+                scores: {
+                  overall_score: insp.scores.overall_score ?? 0,
+                  exterior_score: insp.scores.exterior_score ?? 0,
+                  interior_score: insp.scores.interior_score ?? 0,
+                  engine_score: insp.scores.engine_score ?? 0,
+                  tire_score: insp.scores.tire_score ?? 0,
+                  risk_flags: insp.scores.risk_flags ?? [],
+                } as InspectionScores,
+                valuation: {
+                  base_price: 0,
+                  low_value: val.fair_value_low ?? 0,
+                  avg_value: val.fair_value_avg ?? 0,
+                  high_value: val.fair_value_high ?? 0,
+                  delta_vs_avg: insp.asking_price && val.fair_value_avg ? insp.asking_price - val.fair_value_avg : null,
+                  deal: (val.ai_output?.valuation?.deal as ValuationOutput["deal"]) ?? "fair",
+                  reasoning: val.ai_output?.valuation?.reasoning ?? [],
+                } as ValuationOutput,
+                findings: insp.findings ?? [],
+                burden: burden ? { low: burden.low, high: burden.high, average: burden.average, breakdown: [] } : null,
+                asking_price: insp.asking_price,
+              })}
+            />
           )}
 
           {/* Score + burden grid */}
