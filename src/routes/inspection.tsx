@@ -126,9 +126,15 @@ function InspectionFlow() {
   const [submitting, setSubmitting] = useState(false);
   const [savedInspectionId, setSavedInspectionId] = useState<string | null>(null);
 
+  const [showWalk, setShowWalk] = useState(false);
+
   useEffect(() => {
     if (!user) navigate({ to: "/auth" });
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (phase === "step" && shouldShowWalkthrough()) setShowWalk(true);
+  }, [phase]);
 
   const currentStep = STEPS[stepIdx];
   const progressPct = phase === "report" ? 100 : Math.round((stepIdx / STEPS.length) * 100);
