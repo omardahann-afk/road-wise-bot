@@ -463,6 +463,8 @@ function StepScreen(props: {
   onFrame: (dataUrl: string) => void; onAi: (ai: AiFrameResult) => void;
   onAddManual: (issue: string, severity: Finding["severity"]) => void;
   findings: Finding[]; allFindings: Finding[]; onRemoveFinding: (idx: number) => void;
+  /** issue labels (lowercased) already attached to THIS step — used to dim/lock chips. */
+  addedIssues: Set<string>;
   vehicle: VehicleForm; onNext: () => void; onPrev: () => void; isLast: boolean;
 }) {
   const { step, stepIdx, totalSteps, progressPct } = props;
@@ -516,6 +518,7 @@ function StepScreen(props: {
           stepId={step.id} category={step.category} frame={props.frame} ai={props.ai}
           onFrame={props.onFrame} onAi={props.onAi} vehicle={props.vehicle}
           onAddCandidate={props.onAddManual}
+          addedIssues={props.addedIssues}
         />
       )}
 
@@ -543,12 +546,14 @@ function StepScreen(props: {
 
 /* ============================== Camera capture ============================== */
 function CameraCapture({
-  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate,
+  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate, addedIssues,
 }: {
   stepId: string; category: Finding["category"]; frame: string | null;
   ai: AiFrameResult | null; onFrame: (dataUrl: string) => void;
   onAi: (ai: AiFrameResult) => void; vehicle: VehicleForm;
   onAddCandidate: (issue: string, severity: Finding["severity"]) => void;
+  /** Issue labels already added to this step — used to dim bounding boxes + chips. */
+  addedIssues?: Set<string>;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
