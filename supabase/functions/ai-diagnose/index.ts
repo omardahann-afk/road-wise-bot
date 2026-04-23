@@ -17,7 +17,14 @@ Always include safety warnings for tasks involving fuel, electrical, suspension,
 Recommend a professional when severity is high or when work requires specialized tools.`;
 
 interface Body {
-  task: "obd2" | "symptom" | "camera" | "valuation" | "repair_steps";
+  task:
+    | "obd2"
+    | "symptom"
+    | "camera"
+    | "valuation"
+    | "repair_steps"
+    | "inspection_frame"
+    | "inspection_final";
   payload: Record<string, unknown>;
   vehicle?: Record<string, unknown> | null;
   knowledge?: unknown;
@@ -96,6 +103,36 @@ Return JSON with shape:
  "warnings": string[],
  "estimated_cost": { "low": number, "high": number, "currency": "USD" },
  "professional_recommended": boolean
+}
+Context: ${JSON.stringify(ctx)}`;
+    case "inspection_frame":
+      return `Task: You are inspecting a USED car for purchase. The user just captured a frame for inspection step "${(payload as { step?: string }).step ?? "unknown"}".
+The browser vision model detected the listed generic objects. Infer LIKELY car-related issues visible at this step (scratches, dents, rust spots, paint mismatch, tire wear, cracked trim, fluid leaks, dashboard warning lights, interior wear).
+Return JSON ONLY with shape:
+{
+ "step_summary": string,
+ "findings": [{
+   "issue": string,
+   "category": "exterior"|"interior"|"engine"|"tires"|"dashboard",
+   "severity": "info"|"low"|"medium"|"high"|"critical",
+   "notes": string
+ }],
+ "what_to_check_manually": string[],
+ "next_step_hint": string
+}
+Context: ${JSON.stringify(ctx)}`;
+    case "inspection_final":
+      return `Task: Produce a final used-car inspection report and negotiation guidance based on the structured findings, scores, and computed valuation provided in the input.
+Return JSON ONLY with shape:
+{
+ "headline": string,
+ "summary": string,
+ "top_concerns": [{ "issue": string, "severity": "info"|"low"|"medium"|"high"|"critical", "impact": string }],
+ "negotiation_advice": string,
+ "talking_points": string[],
+ "estimated_repair_cost": { "low": number, "high": number, "currency": "USD" },
+ "decision": "BUY"|"NEGOTIATE"|"AVOID",
+ "decision_reason": string
 }
 Context: ${JSON.stringify(ctx)}`;
   }
