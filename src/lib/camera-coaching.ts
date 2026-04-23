@@ -165,8 +165,8 @@ export function coachForStep(
   const closeup = stepId === "wheels_tires" || stepId === "dashboard";
   const wantsLargeSubject = closeup;
 
-  // Lighting first — overrides framing if too dark.
-  if (stats.brightness < 35) {
+  // Lighting first — overrides framing.
+  if (stats.brightness < 35 || stats.shadowClip > 0.5) {
     return {
       tone: "bad",
       direction: "improve_lighting",
@@ -174,17 +174,45 @@ export function coachForStep(
       confidence: 0.9,
     };
   }
-  if (stats.brightness > 235) {
+  // Strong glare: lots of blown highlights AND low contrast → washed-out frame.
+  if (stats.highlightClip > 0.18 && stats.contrast < 0.35) {
+    return {
+      tone: "bad",
+      direction: "move_to_shade",
+      message: "Too much glare — step into shade or change angle.",
+      confidence: 0.92,
+    };
+  }
+  // Overall overexposure (sun directly on subject).
+  if (stats.brightness > 225 || stats.highlightClip > 0.32) {
+    return {
+      tone: "warn",
+      direction: "overexposed",
+      message: "Overexposed — tilt away from direct sun.",
+      confidence: 0.85,
+    };
+  }
+  // Reflective glare patches (chrome / paint catching sun).
+  if (stats.highlightClip > 0.12) {
+    return {
+      tone: "warn",
+      direction: "glare",
+      message: "Glare on the panel — try a different angle.",
+      confidence: 0.75,
+    };
+  }
+  // Washed-out / hazy frame (low contrast even at normal brightness).
+  if (stats.contrast < 0.18 && stats.brightness > 80) {
     return {
       tone: "warn",
       direction: "improve_lighting",
-      message: "Glare — angle away from direct sun.",
+      message: "Image looks washed out — adjust angle for more contrast.",
       confidence: 0.7,
     };
   }
 
   // Stability second.
-  if (stats.motion > 0.55) {
+  if (stats.motion > 0.5) {
     return {
       tone: "warn",
       direction: "hold_steady",
