@@ -3,6 +3,7 @@ import {
   coachForStep,
   sampleFrameStats,
   type CoachingHint,
+  type FrameStats,
 } from "@/lib/camera-coaching";
 import {
   interpretDetections,
@@ -18,7 +19,9 @@ interface RawDetection {
 const CONFIDENCE_THRESHOLD = 0.68;
 const SMOOTH_WINDOW = 5;
 const STABLE_HITS = 3;
-const LOOP_DELAY_MS = 180;
+const INFERENCE_INTERVAL_MS = 220; // ~4-5 inferences/sec — phone-friendly
+const STATE_COMMIT_INTERVAL_MS = 280; // React commits at most ~3-4x/sec
+const EXPOSURE_ADJUST_MS = 1500; // re-evaluate exposure tweak every 1.5s
 
 export function useSmartCamera(stepId: string) {
   const stepIdRef = useRef(stepId);
@@ -28,11 +31,19 @@ export function useSmartCamera(stepId: string) {
   const scratchCanvasRef = useRef<HTMLCanvasElement>(null);
   const modelRef = useRef<unknown>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const loopHandleRef = useRef<number | null>(null);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const inferenceInFlightRef = useRef(false);
+  const lastInferenceAtRef = useRef(0);
+  const lastCommitAtRef = useRef(0);
+  const lastExposureAdjustAtRef = useRef(0);
+  const exposureCompensationRef = useRef<number | null>(null);
   const historyRef = useRef<RawDetection[][]>([]);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const stableRawRef = useRef<RawDetection[]>([]);
   const lockedClassRef = useRef<{ className: string; ttl: number } | null>(null);
+  const latestInsightsRef = useRef<InterpretedDetection[]>([]);
+  const latestHintRef = useRef<CoachingHint | null>(null);
 
   const [streaming, setStreaming] = useState(false);
   const [modelLoading, setModelLoading] = useState(false);
@@ -48,9 +59,7 @@ export function useSmartCamera(stepId: string) {
   useEffect(() => {
     return () => {
       stopStream();
-      if (loopHandleRef.current !== null) {
-        clearTimeout(loopHandleRef.current);
-      }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
@@ -71,25 +80,33 @@ export function useSmartCamera(stepId: string) {
   function stopStream() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    trackRef.current = null;
+    exposureCompensationRef.current = null;
     setStreaming(false);
     setHint(null);
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
   }
 
   async function startStream(nextFacing: "environment" | "user" = facing) {
     stopStream();
     setCapturedPreview(null);
     try {
+      // 1280x720 @ 24fps balances clarity for AI detection with phone CPU/thermal load.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: nextFacing },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 24, max: 30 },
         },
         audio: false,
       });
 
       const track = stream.getVideoTracks()[0];
+      trackRef.current = track;
       try {
         const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
         const advanced: MediaTrackConstraintSet[] = [];
@@ -124,17 +141,29 @@ export function useSmartCamera(stepId: string) {
       prevPixelsRef.current = null;
       stableRawRef.current = [];
       lockedClassRef.current = null;
+      latestInsightsRef.current = [];
+      latestHintRef.current = null;
+      lastInferenceAtRef.current = 0;
+      lastCommitAtRef.current = 0;
+      lastExposureAdjustAtRef.current = 0;
+      inferenceInFlightRef.current = false;
+
       await ensureModel();
-      detectLoop();
+      scheduleFrame();
     } catch (error) {
       throw error;
     }
   }
 
-  function smoothDetections(latest: RawDetection[]): RawDetection[] {
+  /** Push the latest detection tick into the rolling window and return the
+   * stable, label-locked subset. Frames marked invalid (washed out) skip the
+   * window entirely so glare can't promote phantom detections. */
+  function smoothDetections(latest: RawDetection[], frameValid: boolean): RawDetection[] {
     const history = historyRef.current;
-    history.push(latest);
-    if (history.length > SMOOTH_WINDOW) history.shift();
+    if (frameValid) {
+      history.push(latest);
+      if (history.length > SMOOTH_WINDOW) history.shift();
+    }
 
     const counts = new Map<
       string,
@@ -182,7 +211,7 @@ export function useSmartCamera(stepId: string) {
 
     const locked = lockedClassRef.current;
     const dominant = stable[0];
-    if (dominant && dominant.score >= 0.8 && dominant.hits >= 4) {
+    if (frameValid && dominant && dominant.score >= 0.8 && dominant.hits >= 4) {
       lockedClassRef.current = { className: dominant.class, ttl: 4 };
     } else if (locked) {
       locked.ttl -= 1;
@@ -205,7 +234,54 @@ export function useSmartCamera(stepId: string) {
       .map(({ hits: _hits, ...detection }) => detection);
   }
 
-  async function detectLoop() {
+  /** When highlights stay blown for a while, nudge exposureCompensation down
+   * (where supported — iOS Safari + many Android Chrome devices). */
+  function maybeAdjustExposure(stats: FrameStats, now: number) {
+    const track = trackRef.current;
+    if (!track) return;
+    if (now - lastExposureAdjustAtRef.current < EXPOSURE_ADJUST_MS) return;
+
+    const caps = (track.getCapabilities?.() ?? {}) as {
+      exposureCompensation?: { min?: number; max?: number; step?: number };
+    };
+    const range = caps.exposureCompensation;
+    if (!range || typeof range.min !== "number" || typeof range.max !== "number") return;
+
+    const step = range.step && range.step > 0 ? range.step : 0.33;
+    let target = exposureCompensationRef.current ?? 0;
+
+    if (stats.highlightClip > 0.18 || stats.brightness > 220) {
+      target = Math.max(range.min, target - step);
+    } else if (stats.highlightClip < 0.04 && stats.brightness < 110 && target < 0) {
+      target = Math.min(range.max, target + step);
+    } else {
+      return;
+    }
+
+    if (target === exposureCompensationRef.current) return;
+    exposureCompensationRef.current = target;
+    lastExposureAdjustAtRef.current = now;
+    track
+      .applyConstraints({
+        advanced: [{ exposureCompensation: target } as unknown as MediaTrackConstraintSet],
+      })
+      .catch(() => {
+        // Ignore — capability not actually writable on this device.
+      });
+  }
+
+  function scheduleFrame() {
+    rafRef.current = requestAnimationFrame(handleFrame);
+  }
+
+  /** Per-rAF tick:
+   *  1. Repaint the overlay from the latest known insights (smooth).
+   *  2. If enough time has passed AND no inference is in flight, kick off
+   *     a new detection on the current video frame.
+   *  3. Throttle React state commits so the UI never re-renders faster
+   *     than ~3-4x/sec.
+   */
+  function handleFrame() {
     const video = videoRef.current;
     const overlay = overlayRef.current;
     const scratch = scratchCanvasRef.current;
@@ -213,45 +289,87 @@ export function useSmartCamera(stepId: string) {
       | { detect: (videoEl: HTMLVideoElement) => Promise<RawDetection[]> }
       | null;
 
-    if (!video || !overlay || !scratch || !model || !streamRef.current) return;
-
-    if (video.readyState >= 2 && video.videoWidth > 0) {
-      if (overlay.width !== video.videoWidth) overlay.width = video.videoWidth;
-      if (overlay.height !== video.videoHeight) overlay.height = video.videoHeight;
-
-      try {
-        const raw = await model.detect(video);
-        const filtered = raw.filter((item) => item.score >= CONFIDENCE_THRESHOLD);
-        const stable = smoothDetections(filtered);
-        stableRawRef.current = stable;
-
-        const interpreted = interpretDetections(
-          stable,
-          stepIdRef.current,
-          video.videoWidth,
-          video.videoHeight,
-        );
-        setLiveInsights(interpreted);
-        drawOverlay(overlay, interpreted);
-
-        const sampled = sampleFrameStats(
-          video,
-          prevPixelsRef.current,
-          filtered.map((item) => ({
-            bbox: item.bbox,
-            class: item.class,
-            score: item.score,
-          })),
-          scratch,
-        );
-        prevPixelsRef.current = sampled.pixels;
-        setHint(coachForStep(stepIdRef.current, sampled.stats));
-      } catch (error) {
-        console.error("Camera detect error", error);
-      }
+    if (!video || !overlay || !scratch || !model || !streamRef.current) {
+      rafRef.current = null;
+      return;
     }
 
-    loopHandleRef.current = window.setTimeout(() => detectLoop(), LOOP_DELAY_MS);
+    if (overlay.width !== video.videoWidth) overlay.width = video.videoWidth;
+    if (overlay.height !== video.videoHeight) overlay.height = video.videoHeight;
+
+    // Always repaint the overlay from cached insights for buttery smoothness.
+    drawOverlay(overlay, latestInsightsRef.current);
+
+    const now = performance.now();
+    const dueForInference =
+      video.readyState >= 2 &&
+      video.videoWidth > 0 &&
+      !inferenceInFlightRef.current &&
+      now - lastInferenceAtRef.current >= INFERENCE_INTERVAL_MS;
+
+    if (dueForInference) {
+      inferenceInFlightRef.current = true;
+      lastInferenceAtRef.current = now;
+      runInference(video, scratch, model).finally(() => {
+        inferenceInFlightRef.current = false;
+      });
+    }
+
+    // Throttle React state commits: copy refs into state at most every ~280ms.
+    if (now - lastCommitAtRef.current >= STATE_COMMIT_INTERVAL_MS) {
+      lastCommitAtRef.current = now;
+      setLiveInsights(latestInsightsRef.current);
+      setHint(latestHintRef.current);
+    }
+
+    scheduleFrame();
+  }
+
+  async function runInference(
+    video: HTMLVideoElement,
+    scratch: HTMLCanvasElement,
+    model: { detect: (v: HTMLVideoElement) => Promise<RawDetection[]> },
+  ) {
+    try {
+      const raw = await model.detect(video);
+      const filtered = raw.filter((item) => item.score >= CONFIDENCE_THRESHOLD);
+
+      // Coaching first — also tells us if the frame is glare-corrupted.
+      const sampled = sampleFrameStats(
+        video,
+        prevPixelsRef.current,
+        filtered.map((item) => ({
+          bbox: item.bbox,
+          class: item.class,
+          score: item.score,
+        })),
+        scratch,
+      );
+      prevPixelsRef.current = sampled.pixels;
+      latestHintRef.current = coachForStep(stepIdRef.current, sampled.stats);
+      maybeAdjustExposure(sampled.stats, performance.now());
+
+      // Reject washed-out / overexposed frames from the smoothing pipeline so
+      // glare never promotes phantom detections.
+      const frameValid =
+        sampled.stats.brightness >= 35 &&
+        sampled.stats.brightness <= 230 &&
+        sampled.stats.highlightClip < 0.25 &&
+        sampled.stats.contrast > 0.18 &&
+        sampled.stats.motion < 0.6;
+
+      const stable = smoothDetections(filtered, frameValid);
+      stableRawRef.current = stable;
+
+      latestInsightsRef.current = interpretDetections(
+        stable,
+        stepIdRef.current,
+        video.videoWidth,
+        video.videoHeight,
+      );
+    } catch (error) {
+      console.error("Camera detect error", error);
+    }
   }
 
   function drawOverlay(overlay: HTMLCanvasElement, insights: InterpretedDetection[]) {
@@ -262,7 +380,7 @@ export function useSmartCamera(stepId: string) {
     context.lineWidth = 3;
     context.font = "16px sans-serif";
 
-    insights.forEach((item) => {
+    for (const item of insights) {
       const [x, y, w, h] = item.bbox;
       context.strokeStyle = "rgba(61, 169, 252, 0.95)";
       context.fillStyle = "rgba(61, 169, 252, 0.12)";
@@ -275,7 +393,7 @@ export function useSmartCamera(stepId: string) {
       context.fillRect(x, Math.max(0, y - 24), textWidth, 24);
       context.fillStyle = "rgba(34, 211, 154, 1)";
       context.fillText(label, x + 5, Math.max(16, y - 7));
-    });
+    }
   }
 
   function captureFrame() {
