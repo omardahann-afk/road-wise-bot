@@ -167,6 +167,26 @@ function SymptomChecker() {
               </span>
             </div>
 
+            {/* Pricing for top likely issue — deterministic */}
+            {(() => {
+              const top = result.possible_issues?.[0];
+              if (!top) return null;
+              const sev: Severity = (["info","low","medium","high","critical"].includes(result.severity) ? result.severity : "medium") as Severity;
+              const pricing = estimateRepairCost({
+                issue_type: classifyIssueType(top.title),
+                severity: sev,
+                vehicle_year: vehicle.year ? Number(vehicle.year) : null,
+                vehicle_make: vehicle.make || null,
+                vehicle_model: vehicle.model || null,
+                region: "canada",
+              });
+              return (
+                <div className="-mx-4 sm:mx-0">
+                  <RepairPricingCard pricing={pricing} title={`Estimated cost — ${top.title}`} compact />
+                </div>
+              );
+            })()}
+
             {result.possible_issues && result.possible_issues.length > 0 && (
               <div>
                 <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
