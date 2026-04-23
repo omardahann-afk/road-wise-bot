@@ -11,7 +11,10 @@ import {
   ArrowLeft, Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
   Loader2, Sparkles, Crosshair, Wrench,
 } from "lucide-react";
-import type { FinalDecision, ValuationOutput } from "@/lib/valuation";
+import type { FinalDecision, Finding, InspectionScores, ValuationOutput } from "@/lib/valuation";
+import type { BurdenResult } from "@/lib/pricing";
+import { computeDecisionTrust } from "@/lib/decision-trust";
+import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 
 export const Route = createFileRoute("/history/valuation/$id")({
   component: ValuationDetailPage,
@@ -29,7 +32,14 @@ interface SavedValuation {
   asking_price: number | null;
   decision: string | null;
   negotiation_advice: string | null;
-  ai_output: { ai?: { summary?: string; negotiation_advice?: string }; deterministic?: FinalDecision; valuation?: ValuationOutput } | null;
+  ai_output: {
+    ai?: { summary?: string; negotiation_advice?: string };
+    deterministic?: FinalDecision;
+    valuation?: ValuationOutput;
+    findings?: Finding[];
+    scores?: InspectionScores;
+    burden_cad?: BurdenResult;
+  } | null;
 }
 
 function ValuationDetailPage() {
