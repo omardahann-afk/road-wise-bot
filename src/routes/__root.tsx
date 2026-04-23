@@ -35,19 +35,23 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Diagnose car issues with AI. Live camera diagnostics, OBD2 code lookup, symptom checker, repair guides, and used-car valuation.",
+          "Inspect, diagnose, value, and repair any vehicle with AutoSage AI. Get real-time camera guidance, accurate pricing, and confident BUY, NEGOTIATE, or AVOID decisions.",
       },
-      { property: "og:title", content: "AutoSage AI — Your AI Mechanic" },
+      { property: "og:title", content: "AutoSage AI — Know Before You Buy" },
       {
         property: "og:description",
-        content: "AI-powered diagnostics, repairs, and used-car inspection — in your pocket.",
+        content:
+          "Scan any car, detect issues, estimate repair costs, and decide if it's worth it. AutoSage AI is your all-in-one automotive decision engine.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/preview.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "AutoSage AI — Your AI Mechanic" },
-      { name: "twitter:description", content: "AutoSage AI — Know Before You Buy. Fix What Matters. AI-powered inspection, diagnostics, and used-car valuation." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/91b6b232-b3b4-4546-8701-74ad7ec0ff61/id-preview-b3ffd2af--9b07d72d-6f11-45f7-b991-8e31df39d837.lovable.app-1776969919841.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/91b6b232-b3b4-4546-8701-74ad7ec0ff61/id-preview-b3ffd2af--9b07d72d-6f11-45f7-b991-8e31df39d837.lovable.app-1776969919841.png" },
+      { name: "twitter:title", content: "AutoSage AI — AI Car Inspector & Repair Assistant" },
+      {
+        name: "twitter:description",
+        content: "Inspect, price, and fix vehicles with confidence using real-time AI guidance.",
+      },
+      { name: "twitter:image", content: "/preview.png" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
