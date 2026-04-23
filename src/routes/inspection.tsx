@@ -680,9 +680,10 @@ function CameraCapture({
             <div className="pointer-events-none absolute right-3 top-3 h-6 w-6 border-r-2 border-t-2 border-primary" />
             <div className="pointer-events-none absolute bottom-3 left-3 h-6 w-6 border-b-2 border-l-2 border-primary" />
             <div className="pointer-events-none absolute bottom-3 right-3 h-6 w-6 border-b-2 border-r-2 border-primary" />
-            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur">
-              ● LIVE • COCO-SSD
+            <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur">
+              ● LIVE • {STEP_GUIDANCE[stepId]?.hint ?? "Inspecting"}
             </div>
+            <CoachingOverlay hint={coach} />
           </>
         )}
 
