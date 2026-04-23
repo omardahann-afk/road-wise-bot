@@ -52,7 +52,7 @@ import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card"
 import { sampleFrameStats, coachForStep, STEP_GUIDANCE, type CoachingHint } from "@/lib/camera-coaching";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { WalkthroughModal, shouldShowWalkthrough, markWalkthroughSeen } from "@/components/diagnostics/walkthrough-modal";
-import { interpretDetections, type InterpretedDetection } from "@/lib/camera-intelligence";
+import { interpretDetections, surfaceIssueLabel, type InterpretedDetection } from "@/lib/camera-intelligence";
 import { DetectionChips } from "@/components/diagnostics/detection-chips";
 import { computeDecisionTrust } from "@/lib/decision-trust";
 import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
@@ -569,6 +569,12 @@ function CameraCapture({
   const [coach, setCoach] = useState<CoachingHint | null>(null);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
+  // Latest set of already-added issue labels for THIS step. Read inside the
+  // requestAnimationFrame loop to keep the closure cheap and always fresh.
+  const addedIssuesRef = useRef<Set<string>>(addedIssues ?? new Set());
+  useEffect(() => {
+    addedIssuesRef.current = addedIssues ?? new Set();
+  }, [addedIssues]);
   if (typeof document !== "undefined" && !scratchRef.current) {
     scratchRef.current = document.createElement("canvas");
   }
@@ -642,14 +648,20 @@ function CameraCapture({
           const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight);
           interpretedNow.forEach((p) => {
             const [x, y, w, h] = p.bbox;
-            const stroke =
-              p.confidence === "high"
+            const issueKey = surfaceIssueLabel(p.suggestedIssue).toLowerCase();
+            const isAdded = !!issueKey && addedIssuesRef.current.has(issueKey);
+            // Already-added detections render in a muted/locked style so the
+            // user gets instant feedback that the box is captured.
+            const stroke = isAdded
+              ? "rgba(148,163,184,0.85)" // slate-400 — locked
+              : p.confidence === "high"
                 ? "rgba(74,222,128,0.95)"   // success green
                 : p.confidence === "medium"
                   ? "rgba(96,165,250,0.95)" // primary blue
                   : "rgba(250,204,21,0.95)"; // warning amber
-            const fill =
-              p.confidence === "high"
+            const fill = isAdded
+              ? "rgba(148,163,184,0.10)"
+              : p.confidence === "high"
                 ? "rgba(74,222,128,0.16)"
                 : p.confidence === "medium"
                   ? "rgba(96,165,250,0.16)"
@@ -658,7 +670,9 @@ function CameraCapture({
             ctx.fillStyle = fill;
             ctx.fillRect(x, y, w, h);
             ctx.strokeRect(x, y, w, h);
-            const label = `${p.label} · ${p.confidencePct}% (${p.confidence})`;
+            const label = isAdded
+              ? `✓ Added · ${p.label}`
+              : `${p.label} · ${p.confidencePct}% (${p.confidence})`;
             const tw = ctx.measureText(label).width + 10;
             ctx.fillStyle = "rgba(0,0,0,0.78)";
             ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
