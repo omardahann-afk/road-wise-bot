@@ -52,6 +52,10 @@ import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card"
 import { sampleFrameStats, coachForStep, STEP_GUIDANCE, type CoachingHint } from "@/lib/camera-coaching";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { WalkthroughModal, shouldShowWalkthrough, markWalkthroughSeen } from "@/components/diagnostics/walkthrough-modal";
+import { interpretDetections, type InterpretedDetection } from "@/lib/camera-intelligence";
+import { DetectionChips } from "@/components/diagnostics/detection-chips";
+import { computeDecisionTrust } from "@/lib/decision-trust";
+import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
