@@ -9,38 +9,274 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VehiclesRouteImport } from './routes/vehicles'
+import { Route as ValuationRouteImport } from './routes/valuation'
+import { Route as RepairRouteImport } from './routes/repair'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as InspectionRouteImport } from './routes/inspection'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as CleaningRouteImport } from './routes/cleaning'
+import { Route as BeginnerRouteImport } from './routes/beginner'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DiagnoseIndexRouteImport } from './routes/diagnose.index'
+import { Route as DiagnoseSymptomRouteImport } from './routes/diagnose.symptom'
+import { Route as DiagnoseObd2RouteImport } from './routes/diagnose.obd2'
+import { Route as DiagnoseCameraRouteImport } from './routes/diagnose.camera'
 
+const VehiclesRoute = VehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ValuationRoute = ValuationRouteImport.update({
+  id: '/valuation',
+  path: '/valuation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepairRoute = RepairRouteImport.update({
+  id: '/repair',
+  path: '/repair',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspectionRoute = InspectionRouteImport.update({
+  id: '/inspection',
+  path: '/inspection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CleaningRoute = CleaningRouteImport.update({
+  id: '/cleaning',
+  path: '/cleaning',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeginnerRoute = BeginnerRouteImport.update({
+  id: '/beginner',
+  path: '/beginner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiagnoseIndexRoute = DiagnoseIndexRouteImport.update({
+  id: '/diagnose/',
+  path: '/diagnose/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseSymptomRoute = DiagnoseSymptomRouteImport.update({
+  id: '/diagnose/symptom',
+  path: '/diagnose/symptom',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseObd2Route = DiagnoseObd2RouteImport.update({
+  id: '/diagnose/obd2',
+  path: '/diagnose/obd2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseCameraRoute = DiagnoseCameraRouteImport.update({
+  id: '/diagnose/camera',
+  path: '/diagnose/camera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
+  '/diagnose/': typeof DiagnoseIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
+  '/diagnose': typeof DiagnoseIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
+  '/diagnose/': typeof DiagnoseIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  BeginnerRoute: typeof BeginnerRoute
+  CleaningRoute: typeof CleaningRoute
+  HistoryRoute: typeof HistoryRoute
+  InspectionRoute: typeof InspectionRoute
+  ProfileRoute: typeof ProfileRoute
+  RepairRoute: typeof RepairRoute
+  ValuationRoute: typeof ValuationRoute
+  VehiclesRoute: typeof VehiclesRoute
+  DiagnoseCameraRoute: typeof DiagnoseCameraRoute
+  DiagnoseObd2Route: typeof DiagnoseObd2Route
+  DiagnoseSymptomRoute: typeof DiagnoseSymptomRoute
+  DiagnoseIndexRoute: typeof DiagnoseIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vehicles': {
+      id: '/vehicles'
+      path: '/vehicles'
+      fullPath: '/vehicles'
+      preLoaderRoute: typeof VehiclesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/valuation': {
+      id: '/valuation'
+      path: '/valuation'
+      fullPath: '/valuation'
+      preLoaderRoute: typeof ValuationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repair': {
+      id: '/repair'
+      path: '/repair'
+      fullPath: '/repair'
+      preLoaderRoute: typeof RepairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inspection': {
+      id: '/inspection'
+      path: '/inspection'
+      fullPath: '/inspection'
+      preLoaderRoute: typeof InspectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cleaning': {
+      id: '/cleaning'
+      path: '/cleaning'
+      fullPath: '/cleaning'
+      preLoaderRoute: typeof CleaningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beginner': {
+      id: '/beginner'
+      path: '/beginner'
+      fullPath: '/beginner'
+      preLoaderRoute: typeof BeginnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,21 +284,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diagnose/': {
+      id: '/diagnose/'
+      path: '/diagnose'
+      fullPath: '/diagnose/'
+      preLoaderRoute: typeof DiagnoseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose/symptom': {
+      id: '/diagnose/symptom'
+      path: '/diagnose/symptom'
+      fullPath: '/diagnose/symptom'
+      preLoaderRoute: typeof DiagnoseSymptomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose/obd2': {
+      id: '/diagnose/obd2'
+      path: '/diagnose/obd2'
+      fullPath: '/diagnose/obd2'
+      preLoaderRoute: typeof DiagnoseObd2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose/camera': {
+      id: '/diagnose/camera'
+      path: '/diagnose/camera'
+      fullPath: '/diagnose/camera'
+      preLoaderRoute: typeof DiagnoseCameraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  BeginnerRoute: BeginnerRoute,
+  CleaningRoute: CleaningRoute,
+  HistoryRoute: HistoryRoute,
+  InspectionRoute: InspectionRoute,
+  ProfileRoute: ProfileRoute,
+  RepairRoute: RepairRoute,
+  ValuationRoute: ValuationRoute,
+  VehiclesRoute: VehiclesRoute,
+  DiagnoseCameraRoute: DiagnoseCameraRoute,
+  DiagnoseObd2Route: DiagnoseObd2Route,
+  DiagnoseSymptomRoute: DiagnoseSymptomRoute,
+  DiagnoseIndexRoute: DiagnoseIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
