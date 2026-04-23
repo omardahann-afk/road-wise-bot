@@ -199,34 +199,40 @@ function DiagnosticCard({ row }: { row: DiagRow }) {
   const Icon = row.mode === "camera" ? Camera : row.mode === "obd2" ? ScanLine : Stethoscope;
   const pricing = row.ai_output?.pricing;
   return (
-    <li className="flex items-start gap-3 rounded-2xl border border-border bg-gradient-card p-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            {row.mode}
-          </p>
-          {row.severity && (
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${severityClass(row.severity)}`}>
-              {row.severity}
-            </span>
-          )}
+    <li>
+      <Link
+        to="/history/diagnostic/$id"
+        params={{ id: row.id }}
+        className="flex items-start gap-3 rounded-2xl border border-border bg-gradient-card p-3 transition-colors hover:border-primary/40"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+          <Icon className="h-4 w-4" />
         </div>
-        <p className="text-sm">{row.summary ?? "—"}</p>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <p className="text-[11px] text-muted-foreground">
-            {new Date(row.created_at).toLocaleString()}
-          </p>
-          {pricing && (
-            <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
-              <Banknote className="mr-1 inline h-3 w-3" />
-              {formatCAD(pricing.low_estimate)}–{formatCAD(pricing.high_estimate)}
-            </span>
-          )}
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {row.mode}
+            </p>
+            {row.severity && (
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${severityClass(row.severity)}`}>
+                {row.severity}
+              </span>
+            )}
+          </div>
+          <p className="text-sm">{row.summary ?? "—"}</p>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground">
+              {new Date(row.created_at).toLocaleString()}
+            </p>
+            {pricing && (
+              <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
+                <Banknote className="mr-1 inline h-3 w-3" />
+                {formatCAD(pricing.low_estimate)}–{formatCAD(pricing.high_estimate)}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      </Link>
     </li>
   );
 }
@@ -251,7 +257,8 @@ function InspectionCard({ row }: { row: InspectionRow }) {
 
   return (
     <li>
-      <div className="overflow-hidden rounded-2xl border border-border bg-gradient-elevated shadow-card">
+      <div className="overflow-hidden rounded-2xl border border-border bg-gradient-elevated shadow-card transition-colors hover:border-primary/40">
+        <Link to="/history/inspection/$id" params={{ id: row.id }} className="block">
         <div className="flex items-start gap-3 p-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
             <ScanSearch className="h-5 w-5" />
@@ -315,9 +322,13 @@ function InspectionCard({ row }: { row: InspectionRow }) {
             </div>
           </div>
         </div>
+        </Link>
         <div className="flex gap-1 border-t border-border/60 bg-background/30 px-2 py-1.5">
+          <Link to="/history/inspection/$id" params={{ id: row.id }} className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+            <ScanSearch className="mr-1 inline h-3 w-3" /> Open report
+          </Link>
           <Link to="/repair" className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
-            <Wrench className="mr-1 inline h-3 w-3" /> Repair workflows
+            <Wrench className="mr-1 inline h-3 w-3" /> Repair
           </Link>
           <Link to="/valuation" className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
             <Banknote className="mr-1 inline h-3 w-3" /> Re-value
@@ -338,8 +349,12 @@ function ValuationCard({ row }: { row: ValRow }) {
   }[decision] : null;
 
   return (
-    <li className="rounded-2xl border border-border bg-gradient-card p-3">
-      <div className="flex items-start gap-3">
+    <li>
+    <Link
+      to="/history/valuation/$id"
+      params={{ id: row.id }}
+      className="flex items-start gap-3 rounded-2xl border border-border bg-gradient-card p-3 transition-colors hover:border-primary/40"
+    >
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
           <Banknote className="h-4 w-4" />
         </div>
@@ -362,7 +377,7 @@ function ValuationCard({ row }: { row: ValRow }) {
             {new Date(row.created_at).toLocaleString()}
           </p>
         </div>
-      </div>
+    </Link>
     </li>
   );
 }
