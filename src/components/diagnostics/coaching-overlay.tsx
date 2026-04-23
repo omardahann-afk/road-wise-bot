@@ -1,6 +1,6 @@
 import {
   ArrowLeft, ArrowRight, ArrowUp, ArrowDown, ZoomIn, ZoomOut,
-  Hand, Sun, Crosshair, Check, Eye, AlertCircle,
+  Hand, Sun, SunDim, CloudSun, Crosshair, Check, Eye, AlertCircle,
 } from "lucide-react";
 import type { CoachingHint } from "@/lib/camera-coaching";
 
@@ -89,10 +89,13 @@ function iconFor(d: CoachingHint["direction"]) {
     case "tilt_down": return ArrowDown;
     case "hold_steady": return Hand;
     case "improve_lighting": return Sun;
+    case "overexposed": return SunDim;
+    case "glare": return SunDim;
+    case "move_to_shade": return CloudSun;
     case "center_panel": return Crosshair;
     case "good_view": return Check;
-    case "looking":
+    case "looking": return Eye;
     default:
-      return d === "looking" ? Eye : AlertCircle;
+      return AlertCircle;
   }
 }
