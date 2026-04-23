@@ -642,6 +642,8 @@ function CameraCapture({
           prevPixelsRef.current = pixels;
           setCoach(coachForStep(stepId, stats));
         }
+        // Camera intelligence: interpret detections in automotive terms
+        setInterpreted(interpretDetections(lite, stepId, v.videoWidth, v.videoHeight));
       } catch (e) { console.error(e); }
     }
     rafRef.current = requestAnimationFrame(detectLoop);
