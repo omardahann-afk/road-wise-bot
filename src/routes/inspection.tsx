@@ -49,6 +49,9 @@ import {
 } from "@/lib/valuation";
 import { estimateBurdenCAD, pricingForFinding, formatCAD, type BurdenResult } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { sampleFrameStats, coachForStep, STEP_GUIDANCE, type CoachingHint } from "@/lib/camera-coaching";
+import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
+import { WalkthroughModal, shouldShowWalkthrough, markWalkthroughSeen } from "@/components/diagnostics/walkthrough-modal";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
