@@ -546,7 +546,13 @@ function CameraCapture({
   const [streaming, setStreaming] = useState(false);
   const [loadingModel, setLoadingModel] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [lastDetections, setLastDetections] = useState<{ class: string; score: number }[]>([]);
+  const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
+  const [coach, setCoach] = useState<CoachingHint | null>(null);
+  const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
+  const scratchRef = useRef<HTMLCanvasElement | null>(null);
+  if (typeof document !== "undefined" && !scratchRef.current) {
+    scratchRef.current = document.createElement("canvas");
+  }
 
   useEffect(() => {
     return () => {
@@ -606,21 +612,28 @@ function CameraCapture({
       overlay.width = v.videoWidth; overlay.height = v.videoHeight;
       try {
         const preds = await model.detect(v);
-        setLastDetections(preds.map((p) => ({ class: p.class, score: p.score })));
+        const lite = preds.map((p) => ({ class: p.class, score: p.score, bbox: p.bbox as [number,number,number,number] }));
+        setLastDetections(lite);
         const ctx = overlay.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
           ctx.lineWidth = 3; ctx.font = "16px sans-serif";
           preds.forEach((p) => {
             const [x, y, w, h] = p.bbox;
-            ctx.strokeStyle = "rgba(255,180,60,0.95)";
-            ctx.fillStyle = "rgba(255,180,60,0.18)";
+            ctx.strokeStyle = "rgba(96,165,250,0.95)";
+            ctx.fillStyle = "rgba(96,165,250,0.16)";
             ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
             const label = `${p.class} ${(p.score * 100).toFixed(0)}%`;
             const tw = ctx.measureText(label).width + 10;
             ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
-            ctx.fillStyle = "rgba(255,200,90,1)"; ctx.fillText(label, x + 5, Math.max(14, y - 6));
+            ctx.fillStyle = "rgba(160,200,255,1)"; ctx.fillText(label, x + 5, Math.max(14, y - 6));
           });
+        }
+        // Coaching: deterministic frame analysis
+        if (scratchRef.current) {
+          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
+          prevPixelsRef.current = pixels;
+          setCoach(coachForStep(stepId, stats));
         }
       } catch (e) { console.error(e); }
     }
