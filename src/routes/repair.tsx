@@ -25,6 +25,20 @@ import { severityClass } from "@/lib/severity";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { RepairWorkflow } from "@/lib/valuation";
+import { estimateRepairCost, type IssueType, type Severity } from "@/lib/pricing";
+import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+
+// Maps repair workflow → pricing IssueType (deterministic).
+const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
+  dent_repair: "dent",
+  rust_repair: "rust",
+  paint_repair: "scratch_paint",
+  tire_service: "tire_service",
+  fluid_leak: "fluid_leak",
+  warning_light_diagnostic: "warning_light_diagnostic",
+  interior_repair: "interior_repair",
+  general_repair: "general_repair",
+};
 
 const searchSchema = z.object({
   workflow: z
@@ -252,6 +266,22 @@ function RepairWorkflowDetail(props: {
           )}
         </CardContent>
       </Card>
+
+      {/* Deterministic pricing for this workflow */}
+      {(() => {
+        const issue = WORKFLOW_TO_ISSUE[props.workflowId];
+        const sev: Severity = props.severity ?? "medium";
+        const pricing = estimateRepairCost({
+          issue_type: issue,
+          severity: sev,
+          region: "canada",
+        });
+        return (
+          <div className="mb-4">
+            <RepairPricingCard pricing={pricing} title={`${meta.title} — typical pricing`} />
+          </div>
+        );
+      })()}
 
       {!ai && (
         <Button onClick={generateGuide} disabled={loading} className="w-full" size="lg">

@@ -49,6 +49,9 @@ import {
 } from "@/lib/valuation";
 import { estimateBurdenCAD, pricingForFinding, formatCAD, type BurdenResult } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { sampleFrameStats, coachForStep, STEP_GUIDANCE, type CoachingHint } from "@/lib/camera-coaching";
+import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
+import { WalkthroughModal, shouldShowWalkthrough, markWalkthroughSeen } from "@/components/diagnostics/walkthrough-modal";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
@@ -123,9 +126,15 @@ function InspectionFlow() {
   const [submitting, setSubmitting] = useState(false);
   const [savedInspectionId, setSavedInspectionId] = useState<string | null>(null);
 
+  const [showWalk, setShowWalk] = useState(false);
+
   useEffect(() => {
     if (!user) navigate({ to: "/auth" });
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (phase === "step" && shouldShowWalkthrough()) setShowWalk(true);
+  }, [phase]);
 
   const currentStep = STEPS[stepIdx];
   const progressPct = phase === "report" ? 100 : Math.round((stepIdx / STEPS.length) * 100);
@@ -326,6 +335,13 @@ function InspectionFlow() {
           }}
         />
       )}
+      <WalkthroughModal
+        open={showWalk}
+        onClose={(dontShow) => {
+          setShowWalk(false);
+          if (dontShow) markWalkthroughSeen();
+        }}
+      />
     </AppShell>
   );
 }
@@ -530,7 +546,13 @@ function CameraCapture({
   const [streaming, setStreaming] = useState(false);
   const [loadingModel, setLoadingModel] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [lastDetections, setLastDetections] = useState<{ class: string; score: number }[]>([]);
+  const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
+  const [coach, setCoach] = useState<CoachingHint | null>(null);
+  const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
+  const scratchRef = useRef<HTMLCanvasElement | null>(null);
+  if (typeof document !== "undefined" && !scratchRef.current) {
+    scratchRef.current = document.createElement("canvas");
+  }
 
   useEffect(() => {
     return () => {
@@ -590,21 +612,28 @@ function CameraCapture({
       overlay.width = v.videoWidth; overlay.height = v.videoHeight;
       try {
         const preds = await model.detect(v);
-        setLastDetections(preds.map((p) => ({ class: p.class, score: p.score })));
+        const lite = preds.map((p) => ({ class: p.class, score: p.score, bbox: p.bbox as [number,number,number,number] }));
+        setLastDetections(lite);
         const ctx = overlay.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
           ctx.lineWidth = 3; ctx.font = "16px sans-serif";
           preds.forEach((p) => {
             const [x, y, w, h] = p.bbox;
-            ctx.strokeStyle = "rgba(255,180,60,0.95)";
-            ctx.fillStyle = "rgba(255,180,60,0.18)";
+            ctx.strokeStyle = "rgba(96,165,250,0.95)";
+            ctx.fillStyle = "rgba(96,165,250,0.16)";
             ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
             const label = `${p.class} ${(p.score * 100).toFixed(0)}%`;
             const tw = ctx.measureText(label).width + 10;
             ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
-            ctx.fillStyle = "rgba(255,200,90,1)"; ctx.fillText(label, x + 5, Math.max(14, y - 6));
+            ctx.fillStyle = "rgba(160,200,255,1)"; ctx.fillText(label, x + 5, Math.max(14, y - 6));
           });
+        }
+        // Coaching: deterministic frame analysis
+        if (scratchRef.current) {
+          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
+          prevPixelsRef.current = pixels;
+          setCoach(coachForStep(stepId, stats));
         }
       } catch (e) { console.error(e); }
     }
@@ -651,9 +680,10 @@ function CameraCapture({
             <div className="pointer-events-none absolute right-3 top-3 h-6 w-6 border-r-2 border-t-2 border-primary" />
             <div className="pointer-events-none absolute bottom-3 left-3 h-6 w-6 border-b-2 border-l-2 border-primary" />
             <div className="pointer-events-none absolute bottom-3 right-3 h-6 w-6 border-b-2 border-r-2 border-primary" />
-            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur">
-              ● LIVE • COCO-SSD
+            <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur">
+              ● LIVE • {STEP_GUIDANCE[stepId]?.hint ?? "Inspecting"}
             </div>
+            <CoachingOverlay hint={coach} />
           </>
         )}
 

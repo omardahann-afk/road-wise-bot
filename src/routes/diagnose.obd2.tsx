@@ -9,74 +9,81 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { callAi } from "@/lib/ai";
-import { severityClass } from "@/lib/severity";
+import { lookupObd2, inferObd2Stub, type Obd2Entry } from "@/lib/obd2-dataset";
+import { estimateRepairCost } from "@/lib/pricing";
+import { Obd2ResultCard } from "@/components/diagnostics/obd2-result-card";
+import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 
 export const Route = createFileRoute("/diagnose/obd2")({
   component: Obd2Lookup,
 });
 
-interface KnowledgeRow {
-  key: string;
-  title: string;
-  body: Record<string, unknown>;
-}
-
 interface AiObd2Result {
   summary: string;
-  severity: string;
-  issues?: { code: string; title: string; description: string; system: string }[];
+  severity?: string;
   likely_causes?: string[];
   diy_steps?: { step: string; detail: string; warning?: string }[];
   tools_needed?: string[];
-  estimated_cost?: { low: number; high: number; currency: string };
   professional_recommended?: boolean;
   safety?: string[];
 }
 
+const POPULAR = ["P0301", "P0420", "P0171", "P0700", "P0455", "P0128"];
+
 function Obd2Lookup() {
   const [code, setCode] = useState("");
-  const [knowledge, setKnowledge] = useState<KnowledgeRow | null>(null);
+  const [grounded, setGrounded] = useState<{ entry: Obd2Entry; fromAi: boolean } | null>(null);
   const [aiResult, setAiResult] = useState<AiObd2Result | null>(null);
   const [busy, setBusy] = useState(false);
   const { user } = useAuth();
 
-  async function lookup(e?: React.FormEvent) {
+  async function lookup(rawCode?: string, e?: React.FormEvent) {
     e?.preventDefault();
-    const q = code.trim().toUpperCase();
+    const q = (rawCode ?? code).trim().toUpperCase();
     if (!q) return;
     setBusy(true);
     setAiResult(null);
-    setKnowledge(null);
+    setGrounded(null);
+
     try {
-      // 1. Hit local dataset
-      const { data, error } = await supabase
-        .from("knowledge_sources")
-        .select("key,title,body")
-        .eq("source_type", "obd2")
-        .eq("key", q)
-        .maybeSingle();
-      if (error) throw error;
-      const row = data
-        ? { key: data.key, title: data.title, body: data.body as Record<string, unknown> }
-        : null;
-      setKnowledge(row);
+      // STEP 1 — DETERMINISTIC LOOKUP (local dataset truth)
+      let entry = lookupObd2(q);
+      let fromAi = false;
+      if (!entry) {
+        // STEP 2 — Heuristic stub from prefix (still deterministic structure)
+        const stub = inferObd2Stub(q);
+        if (!stub) {
+          toast.error("Invalid code — must be P/B/C/U followed by 4 digits.");
+          return;
+        }
+        entry = stub;
+        fromAi = true;
+      }
+      setGrounded({ entry, fromAi });
 
-      // 2. Ask AI to enrich/explain
-      const result = await callAi<AiObd2Result>("obd2", { code: q, local_record: row });
-      setAiResult(result);
-
-      if (user) {
-        await supabase.from("diagnostics").insert({
-          user_id: user.id,
-          mode: "obd2",
-          input: { code: q },
-          ai_output: result as never,
-          severity:
-            (["info", "low", "medium", "high", "critical"].includes(result.severity)
-              ? result.severity
-              : "medium") as "info" | "low" | "medium" | "high" | "critical",
-          summary: result.summary,
+      // STEP 3 — AI ENRICHMENT ONLY (never overrides title/severity/system/drivable)
+      try {
+        const result = await callAi<AiObd2Result>("obd2", {
+          code: q,
+          // Pass deterministic ground truth so AI grounds its explanation on it.
+          grounded_truth: entry,
         });
+        setAiResult(result);
+
+        if (user) {
+          await supabase.from("diagnostics").insert({
+            user_id: user.id,
+            mode: "obd2",
+            input: { code: q } as never,
+            ai_output: { grounded: entry, ai: result } as never,
+            severity: entry.severity,
+            summary: `${entry.code} — ${entry.title}`,
+          });
+        }
+      } catch (aiErr) {
+        // AI failed — deterministic result still shows.
+        console.warn("AI enrichment failed, using deterministic only:", aiErr);
+        toast.info("Showing offline data. AI enrichment unavailable right now.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Lookup failed");
@@ -85,15 +92,26 @@ function Obd2Lookup() {
     }
   }
 
+  // Deterministic pricing comes from the grounded entry's pricing_issue mapping.
+  const pricing = grounded
+    ? estimateRepairCost({
+        issue_type: grounded.entry.pricing_issue,
+        severity: grounded.entry.severity,
+        region: "canada",
+      })
+    : null;
+
   return (
     <AppShell title="OBD2 Lookup">
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">OBD2 Code Lookup</h1>
-      <p className="mb-4 text-sm text-muted-foreground">
-        Enter any P/B/C/U code (e.g. <code>P0301</code>). We combine an offline dataset with AI
-        explanation.
-      </p>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold tracking-tight">OBD2 Code Lookup</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Deterministic dataset first. AI explains and adds DIY steps. Severity and drivability are
+          never overridden by AI.
+        </p>
+      </div>
 
-      <form onSubmit={lookup} className="mb-4 flex gap-2">
+      <form onSubmit={(e) => lookup(undefined, e)} className="mb-3 flex gap-2">
         <Input
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -102,44 +120,54 @@ function Obd2Lookup() {
           maxLength={8}
           className="font-mono uppercase tracking-wider"
         />
-        <Button type="submit" disabled={busy || !code.trim()}>
+        <Button type="submit" disabled={busy || !code.trim()} className="shadow-glow">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
           Look up
         </Button>
       </form>
 
-      {knowledge && (
-        <Card className="mb-4">
-          <CardContent className="space-y-2 p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">
-                <span className="font-mono">{knowledge.key}</span> — {knowledge.title}
-              </h3>
-              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
-                local
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {(knowledge.body as { description?: string }).description}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Popular codes */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {POPULAR.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => { setCode(p); lookup(p); }}
+            className="rounded-full border border-border/60 bg-muted/50 px-2.5 py-1 font-mono text-[11px] hover:border-primary/40 hover:text-primary"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* Deterministic grounded card */}
+      {grounded && (
+        <div className="mb-4">
+          <Obd2ResultCard entry={grounded.entry} fromAi={grounded.fromAi} />
+        </div>
       )}
 
+      {/* Pricing card */}
+      {pricing && (
+        <div className="mb-4">
+          <RepairPricingCard pricing={pricing} title="Repair pricing for this code" />
+        </div>
+      )}
+
+      {/* AI enrichment */}
       {aiResult && (
-        <Card>
+        <Card className="bg-gradient-card shadow-card">
           <CardContent className="space-y-4 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm">{aiResult.summary}</p>
-              <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${severityClass(aiResult.severity)}`}
-              >
-                {aiResult.severity ?? "—"}
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                AI Explanation
               </span>
             </div>
+            <p className="text-sm">{aiResult.summary}</p>
 
             {aiResult.likely_causes && aiResult.likely_causes.length > 0 && (
-              <Section title="Likely causes">
+              <Section title="Likely causes (AI)">
                 <ul className="list-disc space-y-1 pl-4 text-sm">
                   {aiResult.likely_causes.map((c, i) => <li key={i}>{c}</li>)}
                 </ul>
@@ -150,16 +178,14 @@ function Obd2Lookup() {
               <Section title="DIY steps">
                 <ol className="space-y-2">
                   {aiResult.diy_steps.map((s, i) => (
-                    <li key={i} className="rounded-lg border border-border bg-muted/30 p-3">
+                    <li key={i} className="rounded-lg border border-border/60 bg-background/40 p-3">
                       <div className="flex items-start gap-2">
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
                           {i + 1}
                         </span>
                         <div>
                           <p className="text-sm font-medium">{s.step}</p>
-                          {s.detail && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">{s.detail}</p>
-                          )}
+                          {s.detail && <p className="mt-0.5 text-xs text-muted-foreground">{s.detail}</p>}
                           {s.warning && (
                             <p className="mt-1 rounded bg-warning/15 px-2 py-1 text-[11px] text-warning">
                               ⚠ {s.warning}
@@ -177,7 +203,7 @@ function Obd2Lookup() {
               <Section title="Tools needed">
                 <div className="flex flex-wrap gap-1.5">
                   {aiResult.tools_needed.map((t, i) => (
-                    <span key={i} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px]">
+                    <span key={i} className="rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px]">
                       {t}
                     </span>
                   ))}
@@ -185,21 +211,10 @@ function Obd2Lookup() {
               </Section>
             )}
 
-            {aiResult.estimated_cost && (
-              <Section title="Estimated cost">
-                <p className="text-sm">
-                  ${aiResult.estimated_cost.low}–${aiResult.estimated_cost.high}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    {aiResult.estimated_cost.currency}
-                  </span>
-                </p>
-              </Section>
-            )}
-
-            {aiResult.professional_recommended && (
+            {(aiResult.professional_recommended || (grounded && !grounded.entry.drivable)) && (
               <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
-                <Sparkles className="mb-1 inline h-4 w-4 text-warning" /> A professional inspection
-                is recommended for this issue.
+                <Sparkles className="mb-1 inline h-4 w-4 text-warning" /> Professional inspection
+                recommended for this code.
               </div>
             )}
 
