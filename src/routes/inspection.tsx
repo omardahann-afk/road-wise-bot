@@ -313,6 +313,20 @@ function InspectionFlow() {
           onAddManual={(issue, severity) => recordManualFinding(currentStep.id, currentStep.category, issue, severity)}
           findings={findings.filter((f) => f.step === currentStep.id)}
           allFindings={findings}
+          addedIssues={
+            new Set(
+              findings
+                .filter((f) => f.step === currentStep.id)
+                .map((f) => f.issue.toLowerCase()),
+            )
+          }
+          onRemoveFinding={removeFinding}
+          vehicle={vehicle}
+          onNext={nextStep}
+          onPrev={prevStep}
+          isLast={stepIdx === STEPS.length - 1}
+        />
+      )}
           onRemoveFinding={removeFinding}
           vehicle={vehicle}
           onNext={nextStep}
