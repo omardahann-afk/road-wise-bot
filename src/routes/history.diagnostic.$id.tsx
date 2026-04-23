@@ -11,7 +11,7 @@ import { Obd2ResultCard } from "@/components/diagnostics/obd2-result-card";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 import type { Obd2Entry } from "@/lib/obd2-dataset";
 import type { PricingResult } from "@/lib/pricing";
-import { ArrowLeft, Camera, ScanLine, Stethoscope, Loader2, Sparkles, Wrench } from "lucide-react";
+import { Camera, ScanLine, Stethoscope, Loader2, Sparkles, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/history/diagnostic/$id")({
   component: DiagnosticDetailPage,
@@ -72,11 +72,6 @@ function DiagnosticDetailPage() {
 
   return (
     <AppShell title="Diagnostic Report">
-      <div className="mb-4">
-        <Link to="/history" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to history
-        </Link>
-      </div>
 
       {!user && !authLoading && (
         <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">Sign in to view this report.</CardContent></Card>

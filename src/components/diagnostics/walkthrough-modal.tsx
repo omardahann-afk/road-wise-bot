@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Hand, Sun, Footprints, ScanSearch, X, Check, ChevronRight } from "lucide-react";
+import { Camera, Hand, Sun, Footprints, ScanSearch, Check, ChevronRight, ChevronLeft } from "lucide-react";
 
 const STORAGE_KEY = "autosage.walkthrough.dismissed.v1";
 
@@ -66,14 +66,14 @@ export function WalkthroughModal({
       className="fixed inset-0 z-50 flex items-end justify-center bg-background/80 backdrop-blur-md p-4 sm:items-center"
     >
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-primary/30 bg-gradient-elevated shadow-decision">
-        {/* Top close */}
+        {/* Top back / cancel */}
         <button
           type="button"
           onClick={skip}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/60 text-muted-foreground hover:text-foreground"
-          aria-label="Skip walkthrough"
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/60 text-muted-foreground transition-colors hover:text-foreground"
+          aria-label="Close walkthrough"
         >
-          <X className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
 
         {/* Content */}

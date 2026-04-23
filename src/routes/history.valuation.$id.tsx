@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCAD } from "@/lib/pricing";
 import {
-  ArrowLeft, Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
+  Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
   Loader2, Sparkles, Crosshair, Wrench,
 } from "lucide-react";
 import type { FinalDecision, Finding, InspectionScores, ValuationOutput } from "@/lib/valuation";
@@ -78,11 +78,6 @@ function ValuationDetailPage() {
 
   return (
     <AppShell title="Valuation Report">
-      <div className="mb-4">
-        <Link to="/history" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to history
-        </Link>
-      </div>
 
       {!user && !authLoading && (
         <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">Sign in to view this report.</CardContent></Card>
