@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DiagnoseIndexRouteImport } from './routes/diagnose.index'
+import { Route as DiagnoseSymptomRouteImport } from './routes/diagnose.symptom'
+import { Route as DiagnoseObd2RouteImport } from './routes/diagnose.obd2'
+import { Route as DiagnoseCameraRouteImport } from './routes/diagnose.camera'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -28,34 +31,80 @@ const DiagnoseIndexRoute = DiagnoseIndexRouteImport.update({
   path: '/diagnose/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiagnoseSymptomRoute = DiagnoseSymptomRouteImport.update({
+  id: '/diagnose/symptom',
+  path: '/diagnose/symptom',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseObd2Route = DiagnoseObd2RouteImport.update({
+  id: '/diagnose/obd2',
+  path: '/diagnose/obd2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseCameraRoute = DiagnoseCameraRouteImport.update({
+  id: '/diagnose/camera',
+  path: '/diagnose/camera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose/': typeof DiagnoseIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose': typeof DiagnoseIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/diagnose/camera': typeof DiagnoseCameraRoute
+  '/diagnose/obd2': typeof DiagnoseObd2Route
+  '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose/': typeof DiagnoseIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/diagnose/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/diagnose'
-  id: '__root__' | '/' | '/auth' | '/diagnose/'
+  to:
+    | '/'
+    | '/auth'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/diagnose/camera'
+    | '/diagnose/obd2'
+    | '/diagnose/symptom'
+    | '/diagnose/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  DiagnoseCameraRoute: typeof DiagnoseCameraRoute
+  DiagnoseObd2Route: typeof DiagnoseObd2Route
+  DiagnoseSymptomRoute: typeof DiagnoseSymptomRoute
   DiagnoseIndexRoute: typeof DiagnoseIndexRoute
 }
 
@@ -82,12 +131,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiagnoseIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diagnose/symptom': {
+      id: '/diagnose/symptom'
+      path: '/diagnose/symptom'
+      fullPath: '/diagnose/symptom'
+      preLoaderRoute: typeof DiagnoseSymptomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose/obd2': {
+      id: '/diagnose/obd2'
+      path: '/diagnose/obd2'
+      fullPath: '/diagnose/obd2'
+      preLoaderRoute: typeof DiagnoseObd2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose/camera': {
+      id: '/diagnose/camera'
+      path: '/diagnose/camera'
+      fullPath: '/diagnose/camera'
+      preLoaderRoute: typeof DiagnoseCameraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  DiagnoseCameraRoute: DiagnoseCameraRoute,
+  DiagnoseObd2Route: DiagnoseObd2Route,
+  DiagnoseSymptomRoute: DiagnoseSymptomRoute,
   DiagnoseIndexRoute: DiagnoseIndexRoute,
 }
 export const routeTree = rootRouteImport
