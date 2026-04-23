@@ -14,6 +14,9 @@ export type CoachingDirection =
   | "tilt_down"
   | "hold_steady"
   | "improve_lighting"
+  | "overexposed"
+  | "glare"
+  | "move_to_shade"
   | "center_panel"
   | "good_view"
   | "looking";
@@ -37,6 +40,12 @@ export interface FrameStats {
   largestArea: number;       // 0-1 portion of frame covered by largest detection
   centerOffset: number;      // 0-1 distance of largest bbox center from frame center
   count: number;
+  /** Fraction of pixels at/near max luma — high = blown highlights/glare. */
+  highlightClip: number;     // 0-1
+  /** Fraction of pixels at/near min luma — high = crushed shadows. */
+  shadowClip: number;        // 0-1
+  /** Std-dev of luma. Low = washed-out / fogged frame. */
+  contrast: number;          // 0-1 normalized
 }
 
 const VEHICLE_CLASSES = new Set([
