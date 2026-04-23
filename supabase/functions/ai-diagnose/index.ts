@@ -70,13 +70,17 @@ Return JSON with shape:
 }
 Context: ${JSON.stringify(ctx)}`;
     case "camera":
-      return `Task: Given a list of generic objects detected by a browser vision model in a car-related scene, infer what automotive component(s) are likely visible and what the user should inspect.
-Return JSON with shape:
+      return `Task: A user pointed their phone camera at part of their car. They captured a still photo (provided to you as an image). The browser also reported these generic objects from a small on-device vision model (low quality, treat as hints only): ${JSON.stringify((payload as { detected_objects?: unknown }).detected_objects ?? [])}.
+Look at the IMAGE carefully. Identify the actual automotive component(s) visible. If the photo is too dark, blurry, or does not clearly show a car part, SAY SO honestly via overall_confidence:"low" and ask the user to recapture — do not invent components.
+Return JSON ONLY with shape:
 {
  "summary": string,
- "likely_components": [{ "name": string, "confidence": "low"|"medium"|"high", "what_to_check": string[] }],
+ "overall_confidence": "low"|"medium"|"high",
+ "image_quality": { "lighting": "poor"|"ok"|"good", "focus": "poor"|"ok"|"good", "framing": "poor"|"ok"|"good" },
+ "likely_components": [{ "name": string, "confidence": "low"|"medium"|"high", "what_to_check": string[], "likely_issue": string|null }],
  "warnings": string[],
  "next_action": string,
+ "recapture_tip": string|null,
  "follow_up_questions": string[]
 }
 Context: ${JSON.stringify(ctx)}`;
@@ -153,6 +157,24 @@ serve(async (req) => {
 
     const userPrompt = buildUserPrompt(body);
 
+    // Multimodal: when the camera task includes an image, send it as an
+    // image_url content block so Gemini can actually look at the photo.
+    const imageB64 = (body.payload as { image_base64?: string })?.image_base64;
+    const userContent: unknown =
+      body.task === "camera" && typeof imageB64 === "string" && imageB64.length > 100
+        ? [
+            { type: "text", text: userPrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageB64.startsWith("data:")
+                  ? imageB64
+                  : `data:image/jpeg;base64,${imageB64}`,
+              },
+            },
+          ]
+        : userPrompt;
+
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -163,7 +185,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
       }),
