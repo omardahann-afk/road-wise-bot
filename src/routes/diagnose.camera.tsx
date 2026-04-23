@@ -46,7 +46,10 @@ function CameraDiagnose() {
   useEffect(() => {
     return () => {
       stopStream();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        clearTimeout(rafRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,17 +105,24 @@ function CameraDiagnose() {
     if (!video || !overlay || !model || !streamRef.current) return;
 
     if (video.readyState >= 2) {
-      overlay.width = video.videoWidth;
-      overlay.height = video.videoHeight;
+      // Match overlay size to video for stable bbox alignment
+      if (overlay.width !== video.videoWidth) overlay.width = video.videoWidth;
+      if (overlay.height !== video.videoHeight) overlay.height = video.videoHeight;
       try {
         const preds = await model.detect(video);
-        setDetections(preds);
-        drawOverlay(overlay, preds);
+        // Filter low-confidence noise to reduce flicker
+        const stable = preds.filter((p) => p.score >= 0.55);
+        setDetections(stable);
+        drawOverlay(overlay, stable);
       } catch (e) {
         console.error("detect error", e);
       }
     }
-    rafRef.current = requestAnimationFrame(detectLoop);
+    // Throttle to ~6fps so the preview stays buttery and the bboxes don't jitter
+    rafRef.current = window.setTimeout(
+      () => requestAnimationFrame(detectLoop),
+      160,
+    ) as unknown as number;
   }
 
   function drawOverlay(overlay: HTMLCanvasElement, preds: Detection[]) {
