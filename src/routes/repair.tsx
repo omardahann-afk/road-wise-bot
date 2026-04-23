@@ -267,6 +267,22 @@ function RepairWorkflowDetail(props: {
         </CardContent>
       </Card>
 
+      {/* Deterministic pricing for this workflow */}
+      {(() => {
+        const issue = WORKFLOW_TO_ISSUE[props.workflowId];
+        const sev: Severity = props.severity ?? "medium";
+        const pricing = estimateRepairCost({
+          issue_type: issue,
+          severity: sev,
+          region: "canada",
+        });
+        return (
+          <div className="mb-4">
+            <RepairPricingCard pricing={pricing} title={`${meta.title} — typical pricing`} />
+          </div>
+        );
+      })()}
+
       {!ai && (
         <Button onClick={generateGuide} disabled={loading} className="w-full" size="lg">
           {loading ? (
