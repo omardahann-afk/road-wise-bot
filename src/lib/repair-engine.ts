@@ -2,8 +2,16 @@
 // Converts raw AI repair output into structured, navigable steps with
 // progress tracking. Progress is keyed by user_id + workflow + issue
 // (or workflow alone for generic guides) so users can resume later.
+//
+// Persistence strategy:
+//   1) localStorage  — instant, offline, per-device fallback (always written).
+//   2) sessions table — cross-device sync when the user is signed in.
+//      Stored under kind='repair' with deterministic title so we can
+//      upsert/find it again. Latest server progress wins on first load,
+//      then local writes flush back up debounced.
 
 import type { RepairWorkflow } from "@/lib/valuation";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface EngineStep {
   step_number: number;
@@ -57,6 +65,88 @@ export function clearProgress(workflow: RepairWorkflow, issue?: string): void {
     window.localStorage.removeItem(key(workflow, issue));
   } catch {
     /* ignore */
+  }
+}
+
+/* ============================================================
+   Cross-device progress sync via the `sessions` table.
+   - kind = 'repair'
+   - title = `repair:${workflow}:${issue||_default}` (deterministic)
+   - data = full RepairProgress JSON
+   RLS: sessions owner all → naturally scoped to the signed-in user.
+   ============================================================ */
+
+function sessionTitle(workflow: RepairWorkflow, issue?: string): string {
+  return `repair:${workflow}:${(issue ?? "_default").toLowerCase().replace(/\s+/g, "-")}`;
+}
+
+/** Pull progress from the database for the signed-in user. Returns null on miss. */
+export async function fetchRemoteProgress(
+  userId: string,
+  workflow: RepairWorkflow,
+  issue: string | undefined,
+  vehicleId: string | null,
+): Promise<RepairProgress | null> {
+  try {
+    const title = sessionTitle(workflow, issue);
+    let q = supabase
+      .from("sessions")
+      .select("data, updated_at")
+      .eq("user_id", userId)
+      .eq("kind", "repair")
+      .eq("title", title)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (vehicleId) q = q.eq("vehicle_id", vehicleId);
+    const { data, error } = await q.maybeSingle();
+    if (error || !data?.data) return null;
+    const parsed = data.data as unknown as RepairProgress;
+    if (typeof parsed?.current_index !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Push progress to the database. Idempotent upsert by (user, kind, title, vehicle). */
+export async function pushRemoteProgress(
+  userId: string,
+  progress: RepairProgress,
+  vehicleId: string | null,
+): Promise<void> {
+  try {
+    const title = sessionTitle(progress.workflow, progress.issue);
+    const payload = { ...progress, updated_at: Date.now() };
+    // Find existing row first (no unique constraint to upsert on).
+    let q = supabase
+      .from("sessions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("kind", "repair")
+      .eq("title", title)
+      .limit(1);
+    if (vehicleId) q = q.eq("vehicle_id", vehicleId);
+    const { data: existing } = await q.maybeSingle();
+    if (existing?.id) {
+      await supabase
+        .from("sessions")
+        .update({
+          data: payload as never,
+          status: progress.completed.length >= progress.total ? "complete" : "active",
+        })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("sessions").insert({
+        user_id: userId,
+        kind: "repair",
+        title,
+        vehicle_id: vehicleId,
+        status: progress.completed.length >= progress.total ? "complete" : "active",
+        data: payload as never,
+      });
+    }
+  } catch {
+    /* network / RLS issues silently fall back to local */
   }
 }
 
