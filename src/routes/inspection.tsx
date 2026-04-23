@@ -624,16 +624,34 @@ function CameraCapture({
         const ctx = overlay.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
-          ctx.lineWidth = 3; ctx.font = "16px sans-serif";
-          preds.forEach((p) => {
+          ctx.lineWidth = 3;
+          ctx.font = "16px sans-serif";
+          // Use interpreted automotive labels + confidence-based tone for the boxes
+          const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight);
+          interpretedNow.forEach((p) => {
             const [x, y, w, h] = p.bbox;
-            ctx.strokeStyle = "rgba(96,165,250,0.95)";
-            ctx.fillStyle = "rgba(96,165,250,0.16)";
-            ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
-            const label = `${p.class} ${(p.score * 100).toFixed(0)}%`;
+            const stroke =
+              p.confidence === "high"
+                ? "rgba(74,222,128,0.95)"   // success green
+                : p.confidence === "medium"
+                  ? "rgba(96,165,250,0.95)" // primary blue
+                  : "rgba(250,204,21,0.95)"; // warning amber
+            const fill =
+              p.confidence === "high"
+                ? "rgba(74,222,128,0.16)"
+                : p.confidence === "medium"
+                  ? "rgba(96,165,250,0.16)"
+                  : "rgba(250,204,21,0.16)";
+            ctx.strokeStyle = stroke;
+            ctx.fillStyle = fill;
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+            const label = `${p.label} · ${p.confidencePct}% (${p.confidence})`;
             const tw = ctx.measureText(label).width + 10;
-            ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
-            ctx.fillStyle = "rgba(160,200,255,1)"; ctx.fillText(label, x + 5, Math.max(14, y - 6));
+            ctx.fillStyle = "rgba(0,0,0,0.78)";
+            ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
+            ctx.fillStyle = stroke;
+            ctx.fillText(label, x + 5, Math.max(14, y - 6));
           });
         }
         // Coaching: deterministic frame analysis
@@ -708,6 +726,17 @@ function CameraCapture({
           </div>
         )}
       </div>
+
+      {/* Live AI detection chips — appear right under the viewfinder while streaming */}
+      {streaming && interpreted.length > 0 && (
+        <DetectionChips
+          detections={interpreted}
+          onAddFinding={(issue, severity) => {
+            onAddCandidate(issue, severity);
+            toast.success(`Added: ${issue}`);
+          }}
+        />
+      )}
 
       <div className="mb-3 flex flex-wrap gap-2">
         {streaming ? (
@@ -938,6 +967,20 @@ function ReportScreen({
           </div>
         </CardContent>
       </Card>
+
+      {/* Decision Trust block — confidence + signals + risks/positives/unknowns */}
+      <DecisionTrustBlock
+        trust={computeDecisionTrust({
+          decision: finalDecision,
+          scores,
+          valuation,
+          findings,
+          burden: burdenCAD,
+          asking_price: vehicle.asking_price ? Number(vehicle.asking_price) : null,
+          steps_completed: STEPS.length,
+          total_steps: STEPS.length,
+        })}
+      />
 
       {/* Decision card — premium */}
       <Card className={`mb-4 border-2 ${decisionMeta.tone} ${decisionMeta.gradient}`}>

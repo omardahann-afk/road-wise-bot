@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RepairWorkflow } from "@/lib/valuation";
 import { estimateRepairCost, type IssueType, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { StepEngine } from "@/components/repair/step-engine";
+import { normalizeAiSteps, FALLBACK_STEPS } from "@/lib/repair-engine";
 
 // Maps repair workflow → pricing IssueType (deterministic).
 const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
@@ -283,99 +285,98 @@ function RepairWorkflowDetail(props: {
         );
       })()}
 
-      {!ai && (
-        <Button onClick={generateGuide} disabled={loading} className="w-full" size="lg">
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Generating tailored guide…
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" /> Generate AI repair guide
-            </>
-          )}
-        </Button>
+      {/* Step engine — ALWAYS available, uses fallback steps until AI enriches them */}
+      {(() => {
+        const engineSteps = normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]);
+        return (
+          <Card className="mb-4 bg-gradient-card">
+            <CardContent className="p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold">{ai?.title ?? `${meta.title} — guided steps`}</h3>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {ai
+                      ? "AI-tailored to your vehicle and finding."
+                      : "Deterministic step pack — generate AI guide for vehicle-specific tweaks."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px]">
+                    {ai?.difficulty ?? meta.difficulty}
+                  </Badge>
+                  {ai?.professional_recommended && (
+                    <Badge variant="destructive" className="text-[10px]">Pro recommended</Badge>
+                  )}
+                  {ai?.estimated_cost && (
+                    <Badge variant="outline" className="text-[10px]">
+                      CA${ai.estimated_cost.low}–CA${ai.estimated_cost.high}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                onClick={generateGuide}
+                disabled={loading}
+                variant={ai ? "outline" : "default"}
+                size="sm"
+                className={ai ? "" : "w-full shadow-glow"}
+              >
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating tailored guide…</>
+                ) : ai ? (
+                  <><Sparkles className="h-4 w-4" /> Re-generate AI guide</>
+                ) : (
+                  <><Sparkles className="h-4 w-4" /> Generate AI repair guide</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      <StepEngine
+        workflow={props.workflowId}
+        issue={props.issue}
+        steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
+      />
+
+      {ai && ai.warnings.length > 0 && (
+        <Card className="mt-4 border-warning/40 bg-warning/5">
+          <CardContent className="p-4">
+            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-warning">
+              <ShieldAlert className="h-4 w-4" /> Safety
+            </h4>
+            <ul className="list-disc space-y-1 pl-5 text-xs">
+              {ai.warnings.map((w, i) => <li key={i}>{w}</li>)}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
-      {ai && (
-        <>
-          <Card className="mb-4">
+      {ai && (ai.tools.length > 0 || ai.parts.length > 0) && (
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <Card>
             <CardContent className="p-4">
-              <h3 className="text-base font-bold">{ai.title}</h3>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Badge variant="outline">{ai.difficulty}</Badge>
-                <Badge variant="outline">
-                  CA${ai.estimated_cost.low}–CA${ai.estimated_cost.high}
-                </Badge>
-                {ai.professional_recommended && (
-                  <Badge variant="destructive">Pro recommended</Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {ai.warnings.length > 0 && (
-            <Card className="mb-4 border-warning/40 bg-warning/5">
-              <CardContent className="p-4">
-                <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-warning">
-                  <ShieldAlert className="h-4 w-4" /> Safety
-                </h4>
-                <ul className="list-disc space-y-1 pl-5 text-xs">
-                  {ai.warnings.map((w, i) => <li key={i}>{w}</li>)}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Steps ({ai.steps.length})
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Tools
               </h4>
-              <ol className="space-y-3">
-                {ai.steps.map((s, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{s.step}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{s.detail}</p>
-                      {s.warning && (
-                        <p className="mt-1 rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-[11px] text-warning">
-                          ⚠ {s.warning}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <ul className="space-y-1 text-xs">
+                {ai.tools.map((t, i) => <li key={i}>• {t}</li>)}
+              </ul>
             </CardContent>
           </Card>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Tools
-                </h4>
-                <ul className="space-y-1 text-xs">
-                  {ai.tools.map((t, i) => <li key={i}>• {t}</li>)}
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Parts
-                </h4>
-                <ul className="space-y-1 text-xs">
-                  {ai.parts.map((p, i) => <li key={i}>• {p}</li>)}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </>
+          <Card>
+            <CardContent className="p-4">
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Parts
+              </h4>
+              <ul className="space-y-1 text-xs">
+                {ai.parts.map((p, i) => <li key={i}>• {p}</li>)}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </AppShell>
   );
