@@ -535,11 +535,12 @@ function StepScreen(props: {
 
 /* ============================== Camera capture ============================== */
 function CameraCapture({
-  stepId, category, frame, ai, onFrame, onAi, vehicle,
+  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate,
 }: {
   stepId: string; category: Finding["category"]; frame: string | null;
   ai: AiFrameResult | null; onFrame: (dataUrl: string) => void;
   onAi: (ai: AiFrameResult) => void; vehicle: VehicleForm;
+  onAddCandidate: (issue: string, severity: Finding["severity"]) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
