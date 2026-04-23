@@ -61,11 +61,24 @@ function SymptomChecker() {
       );
       setResult(ai);
       if (user) {
+        // Compute deterministic pricing from top likely issue, persist for history.
+        const top = ai.possible_issues?.[0];
+        const pricingSnapshot = top
+          ? estimateRepairCost({
+              issue_type: classifyIssueType(top.title),
+              severity: ((["info","low","medium","high","critical"].includes(ai.severity)
+                ? ai.severity : "medium") as Severity),
+              vehicle_year: vehicle.year ? Number(vehicle.year) : null,
+              vehicle_make: vehicle.make || null,
+              vehicle_model: vehicle.model || null,
+              region: "canada",
+            })
+          : null;
         await supabase.from("diagnostics").insert({
           user_id: user.id,
           mode: "symptom",
           input: { symptoms, conditions, vehicle },
-          ai_output: ai as never,
+          ai_output: { ...ai, pricing: pricingSnapshot } as never,
           severity:
             (["info", "low", "medium", "high", "critical"].includes(ai.severity)
               ? ai.severity
