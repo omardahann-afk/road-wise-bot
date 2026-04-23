@@ -1010,8 +1010,8 @@ function ReportScreen({
         </CardContent>
       </Card>
 
-      {/* Repair burden */}
-      {repairBurden.high > 0 && (
+      {/* Repair burden — Canadian shop pricing */}
+      {burdenCAD && burdenCAD.high > 0 && (
         <Card className="mb-4 bg-gradient-card shadow-card">
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center justify-between">
@@ -1019,11 +1019,12 @@ function ReportScreen({
                 <Wrench className="h-4 w-4" /> Estimated repair burden
               </h3>
               <span className="text-xl font-black text-warning">
-                ${repairBurden.low.toLocaleString()}–${repairBurden.high.toLocaleString()}
+                {formatCAD(burdenCAD.low)}–{formatCAD(burdenCAD.high)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Deterministic estimate based on category × severity. Use for negotiation leverage.
+              Aggregated across {burdenCAD.breakdown.length} finding{burdenCAD.breakdown.length === 1 ? "" : "s"}.
+              Estimates based on typical Canadian shop pricing (labor + parts).
             </p>
           </CardContent>
         </Card>
