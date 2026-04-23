@@ -47,6 +47,8 @@ import {
   type RepairCostEstimate,
   type ValuationOutput,
 } from "@/lib/valuation";
+import { estimateBurdenCAD, pricingForFinding, formatCAD, type BurdenResult } from "@/lib/pricing";
+import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
@@ -115,6 +117,7 @@ function InspectionFlow() {
   const [scores, setScores] = useState<InspectionScores | null>(null);
   const [valuation, setValuation] = useState<ValuationOutput | null>(null);
   const [repairBurden, setRepairBurden] = useState<RepairCostEstimate | null>(null);
+  const [burdenCAD, setBurdenCAD] = useState<BurdenResult | null>(null);
   const [finalDecision, setFinalDecision] = useState<FinalDecision | null>(null);
   const [aiFinal, setAiFinal] = useState<AiFinalResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -195,6 +198,13 @@ function InspectionFlow() {
     const burden = estimateRepairBurden(allFindings);
     setRepairBurden(burden);
 
+    const burdenCad = estimateBurdenCAD(allFindings, {
+      year: Number(vehicle.year) || null,
+      make: vehicle.make,
+      model: vehicle.model,
+    });
+    setBurdenCAD(burdenCad);
+
     const fd = computeFinalDecision({
       valuation: val,
       scores: computedScores,
@@ -234,7 +244,7 @@ function InspectionFlow() {
             } as never,
             asking_price: askingPrice,
             findings: allFindings as never,
-            scores: { ...computedScores, repair_burden: burden, final_decision: fd } as never,
+            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd } as never,
             recommendation: fd.decision,
             notes: ai.summary,
           })
@@ -304,6 +314,7 @@ function InspectionFlow() {
           scores={scores}
           valuation={valuation}
           repairBurden={repairBurden}
+          burdenCAD={burdenCAD}
           finalDecision={finalDecision}
           ai={aiFinal}
           submitting={submitting}
@@ -311,7 +322,7 @@ function InspectionFlow() {
           onRestart={() => {
             setPhase("setup"); setStepIdx(0); setFindings([]); setStepFrames({}); setAiByStep({});
             setManualNotes({}); setScores(null); setValuation(null); setRepairBurden(null);
-            setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
+            setBurdenCAD(null); setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
           }}
         />
       )}
@@ -833,12 +844,12 @@ function FindingsList({ findings, onRemove }: { findings: Finding[]; onRemove: (
 
 /* ============================== Report screen ============================== */
 function ReportScreen({
-  vehicle, findings, scores, valuation, repairBurden, finalDecision, ai, submitting, inspectionId, onRestart,
+  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, onRestart,
 }: {
   vehicle: VehicleForm; findings: Finding[]; scores: InspectionScores;
-  valuation: ValuationOutput; repairBurden: RepairCostEstimate; finalDecision: FinalDecision;
-  ai: AiFinalResult | null; submitting: boolean; inspectionId: string | null;
-  onRestart: () => void;
+  valuation: ValuationOutput; repairBurden: RepairCostEstimate; burdenCAD: BurdenResult | null;
+  finalDecision: FinalDecision; ai: AiFinalResult | null; submitting: boolean;
+  inspectionId: string | null; onRestart: () => void;
 }) {
   const decision = finalDecision.decision;
   const decisionMeta = {
@@ -999,8 +1010,8 @@ function ReportScreen({
         </CardContent>
       </Card>
 
-      {/* Repair burden */}
-      {repairBurden.high > 0 && (
+      {/* Repair burden — Canadian shop pricing */}
+      {burdenCAD && burdenCAD.high > 0 && (
         <Card className="mb-4 bg-gradient-card shadow-card">
           <CardContent className="space-y-3 p-5">
             <div className="flex items-center justify-between">
@@ -1008,11 +1019,12 @@ function ReportScreen({
                 <Wrench className="h-4 w-4" /> Estimated repair burden
               </h3>
               <span className="text-xl font-black text-warning">
-                ${repairBurden.low.toLocaleString()}–${repairBurden.high.toLocaleString()}
+                {formatCAD(burdenCAD.low)}–{formatCAD(burdenCAD.high)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Deterministic estimate based on category × severity. Use for negotiation leverage.
+              Aggregated across {burdenCAD.breakdown.length} finding{burdenCAD.breakdown.length === 1 ? "" : "s"}.
+              Estimates based on typical Canadian shop pricing (labor + parts).
             </p>
           </CardContent>
         </Card>
@@ -1066,6 +1078,11 @@ function ReportScreen({
                     <ul className="space-y-2">
                       {items.map((f, i) => {
                         const handoff = classifyRepair(f);
+                        const pricing = pricingForFinding(f, {
+                          year: Number(vehicle.year) || null,
+                          make: vehicle.make,
+                          model: vehicle.model,
+                        });
                         return (
                           <li key={i} className="rounded-xl border border-border/60 bg-background/40 p-3">
                             <div className="flex items-start gap-2">
@@ -1075,7 +1092,7 @@ function ReportScreen({
                               <div className="flex-1">
                                 <div className="text-sm font-medium">{f.issue}</div>
                                 <div className="mt-0.5 text-[11px] text-muted-foreground">
-                                  Location: {f.step.replace(/_/g, " ")}
+                                  Location: {f.step.replace(/_/g, " ")} · Est. {formatCAD(pricing.low_estimate)}–{formatCAD(pricing.high_estimate)}
                                 </div>
                               </div>
                             </div>
