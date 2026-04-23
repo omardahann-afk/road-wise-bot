@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCAD } from "@/lib/pricing";
 import {
-  ArrowLeft, Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
+  Banknote, ScanSearch, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
   Loader2, Sparkles, Crosshair, Wrench,
 } from "lucide-react";
 import type { FinalDecision, Finding, InspectionScores, ValuationOutput } from "@/lib/valuation";

@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCAD } from "@/lib/pricing";
 import { severityClass } from "@/lib/severity";
 import {
-  ArrowLeft,
   Banknote,
   Wrench,
   ScanSearch,
