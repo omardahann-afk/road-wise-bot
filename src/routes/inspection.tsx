@@ -117,6 +117,7 @@ function InspectionFlow() {
   const [scores, setScores] = useState<InspectionScores | null>(null);
   const [valuation, setValuation] = useState<ValuationOutput | null>(null);
   const [repairBurden, setRepairBurden] = useState<RepairCostEstimate | null>(null);
+  const [burdenCAD, setBurdenCAD] = useState<BurdenResult | null>(null);
   const [finalDecision, setFinalDecision] = useState<FinalDecision | null>(null);
   const [aiFinal, setAiFinal] = useState<AiFinalResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
