@@ -1,6 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AiTask = "obd2" | "symptom" | "camera" | "valuation" | "repair_steps";
+export type AiTask =
+  | "obd2"
+  | "symptom"
+  | "camera"
+  | "valuation"
+  | "repair_steps"
+  | "inspection_frame"
+  | "inspection_final";
 
 export async function callAi<T = unknown>(
   task: AiTask,
