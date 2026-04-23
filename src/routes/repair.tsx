@@ -305,7 +305,7 @@ function RepairWorkflowDetail(props: {
               <div className="mt-2 flex flex-wrap gap-2">
                 <Badge variant="outline">{ai.difficulty}</Badge>
                 <Badge variant="outline">
-                  ${ai.estimated_cost.low}–${ai.estimated_cost.high}
+                  CA${ai.estimated_cost.low}–CA${ai.estimated_cost.high}
                 </Badge>
                 {ai.professional_recommended && (
                   <Badge variant="destructive">Pro recommended</Badge>

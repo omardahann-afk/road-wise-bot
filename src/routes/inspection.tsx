@@ -401,7 +401,7 @@ function SetupScreen({
                   onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })} />
               </div>
               <div>
-                <Label htmlFor="asking" className="text-[11px]">Asking price (USD)</Label>
+                <Label htmlFor="asking" className="text-[11px]">Asking price (CAD)</Label>
                 <Input id="asking" inputMode="numeric" placeholder="14,500" value={vehicle.asking_price}
                   onChange={(e) => setVehicle({ ...vehicle, asking_price: e.target.value })} />
               </div>
@@ -923,7 +923,7 @@ function ReportScreen({
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span>{Number(vehicle.mileage).toLocaleString()} mi</span>
             {vehicle.asking_price && (
-              <span>Asking ${Number(vehicle.asking_price).toLocaleString()}</span>
+              <span>Asking {formatCAD(Number(vehicle.asking_price))}</span>
             )}
             <span>{findings.length} findings</span>
           </div>
@@ -947,7 +947,7 @@ function ReportScreen({
               </p>
               {finalDecision.net_value !== null && (
                 <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-current bg-background/40 px-3 py-1.5 text-xs font-semibold">
-                  Net value after repairs: ${finalDecision.net_value.toLocaleString()}
+                  Net value after repairs: {formatCAD(finalDecision.net_value)}
                 </div>
               )}
             </div>
@@ -1022,7 +1022,7 @@ function ReportScreen({
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Banknote className="h-3.5 w-3.5" /> Asking price
                 </span>
-                <span className="font-bold">${Number(vehicle.asking_price).toLocaleString()}</span>
+                <span className="font-bold">{formatCAD(Number(vehicle.asking_price))}</span>
               </div>
               {valuation.delta_vs_avg !== null && (
                 <div className="mt-1.5 flex items-center justify-between text-xs">
@@ -1031,7 +1031,7 @@ function ReportScreen({
                     valuation.delta_vs_avg > 0 ? "text-destructive" : "text-success"
                   }`}>
                     {valuation.delta_vs_avg > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {valuation.delta_vs_avg > 0 ? "+" : ""}${valuation.delta_vs_avg.toLocaleString()}
+                    {valuation.delta_vs_avg > 0 ? "+" : ""}{formatCAD(valuation.delta_vs_avg)}
                   </span>
                 </div>
               )}
@@ -1221,7 +1221,7 @@ function ValueCell({ label, value, highlight }: { label: string; value: number; 
     }`}>
       <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={`text-lg font-black ${highlight ? "text-primary" : ""}`}>
-        ${value.toLocaleString()}
+        {formatCAD(value)}
       </div>
     </div>
   );
