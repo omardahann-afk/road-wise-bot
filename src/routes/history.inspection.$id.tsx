@@ -206,7 +206,7 @@ function InspectionDetailPage() {
                   reasoning: val.ai_output?.valuation?.reasoning ?? [],
                 } as ValuationOutput,
                 findings: insp.findings ?? [],
-                burden: burden ? { low: burden.low, high: burden.high, average: burden.average, breakdown: [] } : null,
+                burden: burden ? { low: burden.low, high: burden.high, average: burden.average, currency: "CAD", breakdown: [] } : null,
                 asking_price: insp.asking_price,
               })}
             />
