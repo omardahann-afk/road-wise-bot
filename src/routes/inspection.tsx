@@ -327,13 +327,6 @@ function InspectionFlow() {
           isLast={stepIdx === STEPS.length - 1}
         />
       )}
-          onRemoveFinding={removeFinding}
-          vehicle={vehicle}
-          onNext={nextStep}
-          onPrev={prevStep}
-          isLast={stepIdx === STEPS.length - 1}
-        />
-      )}
       {phase === "report" && scores && valuation && repairBurden && finalDecision && (
         <ReportScreen
           vehicle={vehicle}
