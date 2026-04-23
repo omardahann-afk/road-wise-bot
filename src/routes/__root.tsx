@@ -35,20 +35,25 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Inspect, diagnose, and evaluate vehicles with AI-powered camera guidance, OBD2 insights, repair pricing, and used-car buying decisions.",
+          "Diagnose car issues with AI. Live camera diagnostics, OBD2 code lookup, symptom checker, repair guides, and used-car valuation.",
       },
       { property: "og:title", content: "AutoSage AI — Your AI Mechanic" },
       {
         property: "og:description",
-        content: "Inspect cars, find problems, estimate repair costs, and decide whether to buy, negotiate, or walk away.",
+        content: "AI-powered diagnostics, repairs, and used-car inspection — in your pocket.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "AutoSage AI — Your AI Mechanic" },
-      {
-        name: "twitter:description",
-        content: "Inspect cars, find problems, estimate repair costs, and decide whether to buy, negotiate, or walk away.",
-      },
+      { name: "description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { name: "twitter:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
     ],
