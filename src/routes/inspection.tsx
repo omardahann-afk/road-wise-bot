@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Banknote,
   Crosshair,
+  Sofa,
 } from "lucide-react";
 import { toast } from "sonner";
 import { callAi } from "@/lib/ai";
