@@ -339,6 +339,7 @@ function RepairWorkflowDetail(props: {
         workflow={props.workflowId}
         issue={props.issue}
         steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
+        userId={props.userId}
       />
 
       {ai && ai.warnings.length > 0 && (
