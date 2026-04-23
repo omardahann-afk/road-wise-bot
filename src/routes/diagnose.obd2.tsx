@@ -71,11 +71,17 @@ function Obd2Lookup() {
         setAiResult(result);
 
         if (user) {
+          // Persist deterministic pricing snapshot so history can show cost impact.
+          const pricingSnapshot = estimateRepairCost({
+            issue_type: entry.pricing_issue,
+            severity: entry.severity,
+            region: "canada",
+          });
           await supabase.from("diagnostics").insert({
             user_id: user.id,
             mode: "obd2",
             input: { code: q } as never,
-            ai_output: { grounded: entry, ai: result } as never,
+            ai_output: { grounded: entry, ai: result, pricing: pricingSnapshot } as never,
             severity: entry.severity,
             summary: `${entry.code} — ${entry.title}`,
           });
