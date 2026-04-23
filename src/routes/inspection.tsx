@@ -161,7 +161,13 @@ function InspectionFlow() {
   }
 
   function recordManualFinding(stepId: string, category: Finding["category"], issue: string, severity: Finding["severity"]) {
-    setFindings((prev) => [...prev, { step: stepId, category, issue, severity, notes: "Manual entry" }]);
+    setFindings((prev) => {
+      // De-dup: don't add the same issue twice for the same step.
+      const key = `${stepId}::${issue.toLowerCase()}`;
+      const exists = prev.some((f) => `${f.step}::${f.issue.toLowerCase()}` === key);
+      if (exists) return prev;
+      return [...prev, { step: stepId, category, issue, severity, notes: "Manual entry" }];
+    });
   }
 
   function removeFinding(idx: number) {
@@ -279,7 +285,16 @@ function InspectionFlow() {
           asking_price: askingPrice,
           decision: fd.decision,
           negotiation_advice: ai.negotiation_advice,
-          ai_output: { ai, deterministic: fd } as never,
+          ai_output: {
+            ai,
+            deterministic: fd,
+            // Embed the inspection signal so /history/valuation/$id can
+            // rehydrate the Decision Trust block without a second query.
+            findings: allFindings,
+            scores: computedScores,
+            valuation: val,
+            burden_cad: burdenCad,
+          } as never,
         });
         toast.success("Inspection saved to history");
       }
@@ -757,7 +772,10 @@ function CameraCapture({
       {streaming && interpreted.length > 0 && (
         <DetectionChips
           detections={interpreted}
+          addedIssues={addedIssues}
           onAddFinding={(issue, severity) => {
+            const key = issue.toLowerCase();
+            if (addedIssues?.has(key)) return; // de-dup guard
             onAddCandidate(issue, severity);
             toast.success(`Added: ${issue}`);
           }}
