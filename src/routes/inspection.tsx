@@ -968,6 +968,20 @@ function ReportScreen({
         </CardContent>
       </Card>
 
+      {/* Decision Trust block — confidence + signals + risks/positives/unknowns */}
+      <DecisionTrustBlock
+        trust={computeDecisionTrust({
+          decision: finalDecision,
+          scores,
+          valuation,
+          findings,
+          burden: burdenCAD,
+          asking_price: vehicle.asking_price ? Number(vehicle.asking_price) : null,
+          steps_completed: STEPS.length,
+          total_steps: STEPS.length,
+        })}
+      />
+
       {/* Decision card — premium */}
       <Card className={`mb-4 border-2 ${decisionMeta.tone} ${decisionMeta.gradient}`}>
         <CardContent className="p-6">
