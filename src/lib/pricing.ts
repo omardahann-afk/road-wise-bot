@@ -197,7 +197,7 @@ export function estimateRepairCost(input: PricingInput): PricingResult {
   const labor: LaborLevel = input.labor_level ?? profile.labor;
   const [hLo, hHi] = profile.time_hours[sev];
   const [rLo, rHi] = LABOR_RATE[labor];
-  const partsRequired = input.parts_required ?? sev !== "low" || profile.parts_cad[sev][1] > 50;
+  const partsRequired = input.parts_required ?? (sev !== "low" || profile.parts_cad[sev][1] > 50);
   const [pLo, pHi] = partsRequired ? profile.parts_cad[sev] : [0, 0];
 
   const mult = vehicleMultiplier(input.vehicle_make, input.vehicle_model, input.vehicle_year);
