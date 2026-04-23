@@ -9,6 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VehiclesRouteImport } from './routes/vehicles'
+import { Route as ValuationRouteImport } from './routes/valuation'
+import { Route as RepairRouteImport } from './routes/repair'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as InspectionRouteImport } from './routes/inspection'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as CleaningRouteImport } from './routes/cleaning'
+import { Route as BeginnerRouteImport } from './routes/beginner'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DiagnoseIndexRouteImport } from './routes/diagnose.index'
@@ -16,6 +24,46 @@ import { Route as DiagnoseSymptomRouteImport } from './routes/diagnose.symptom'
 import { Route as DiagnoseObd2RouteImport } from './routes/diagnose.obd2'
 import { Route as DiagnoseCameraRouteImport } from './routes/diagnose.camera'
 
+const VehiclesRoute = VehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ValuationRoute = ValuationRouteImport.update({
+  id: '/valuation',
+  path: '/valuation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepairRoute = RepairRouteImport.update({
+  id: '/repair',
+  path: '/repair',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspectionRoute = InspectionRouteImport.update({
+  id: '/inspection',
+  path: '/inspection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CleaningRoute = CleaningRouteImport.update({
+  id: '/cleaning',
+  path: '/cleaning',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeginnerRoute = BeginnerRouteImport.update({
+  id: '/beginner',
+  path: '/beginner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -50,6 +98,14 @@ const DiagnoseCameraRoute = DiagnoseCameraRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
   '/diagnose/camera': typeof DiagnoseCameraRoute
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
@@ -58,6 +114,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
   '/diagnose/camera': typeof DiagnoseCameraRoute
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
@@ -67,6 +131,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/beginner': typeof BeginnerRoute
+  '/cleaning': typeof CleaningRoute
+  '/history': typeof HistoryRoute
+  '/inspection': typeof InspectionRoute
+  '/profile': typeof ProfileRoute
+  '/repair': typeof RepairRoute
+  '/valuation': typeof ValuationRoute
+  '/vehicles': typeof VehiclesRoute
   '/diagnose/camera': typeof DiagnoseCameraRoute
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
@@ -77,6 +149,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
     | '/diagnose/camera'
     | '/diagnose/obd2'
     | '/diagnose/symptom'
@@ -85,6 +165,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
     | '/diagnose/camera'
     | '/diagnose/obd2'
     | '/diagnose/symptom'
@@ -93,6 +181,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/beginner'
+    | '/cleaning'
+    | '/history'
+    | '/inspection'
+    | '/profile'
+    | '/repair'
+    | '/valuation'
+    | '/vehicles'
     | '/diagnose/camera'
     | '/diagnose/obd2'
     | '/diagnose/symptom'
@@ -102,6 +198,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  BeginnerRoute: typeof BeginnerRoute
+  CleaningRoute: typeof CleaningRoute
+  HistoryRoute: typeof HistoryRoute
+  InspectionRoute: typeof InspectionRoute
+  ProfileRoute: typeof ProfileRoute
+  RepairRoute: typeof RepairRoute
+  ValuationRoute: typeof ValuationRoute
+  VehiclesRoute: typeof VehiclesRoute
   DiagnoseCameraRoute: typeof DiagnoseCameraRoute
   DiagnoseObd2Route: typeof DiagnoseObd2Route
   DiagnoseSymptomRoute: typeof DiagnoseSymptomRoute
@@ -110,6 +214,62 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vehicles': {
+      id: '/vehicles'
+      path: '/vehicles'
+      fullPath: '/vehicles'
+      preLoaderRoute: typeof VehiclesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/valuation': {
+      id: '/valuation'
+      path: '/valuation'
+      fullPath: '/valuation'
+      preLoaderRoute: typeof ValuationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repair': {
+      id: '/repair'
+      path: '/repair'
+      fullPath: '/repair'
+      preLoaderRoute: typeof RepairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inspection': {
+      id: '/inspection'
+      path: '/inspection'
+      fullPath: '/inspection'
+      preLoaderRoute: typeof InspectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cleaning': {
+      id: '/cleaning'
+      path: '/cleaning'
+      fullPath: '/cleaning'
+      preLoaderRoute: typeof CleaningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beginner': {
+      id: '/beginner'
+      path: '/beginner'
+      fullPath: '/beginner'
+      preLoaderRoute: typeof BeginnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -158,6 +318,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  BeginnerRoute: BeginnerRoute,
+  CleaningRoute: CleaningRoute,
+  HistoryRoute: HistoryRoute,
+  InspectionRoute: InspectionRoute,
+  ProfileRoute: ProfileRoute,
+  RepairRoute: RepairRoute,
+  ValuationRoute: ValuationRoute,
+  VehiclesRoute: VehiclesRoute,
   DiagnoseCameraRoute: DiagnoseCameraRoute,
   DiagnoseObd2Route: DiagnoseObd2Route,
   DiagnoseSymptomRoute: DiagnoseSymptomRoute,
