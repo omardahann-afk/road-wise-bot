@@ -11,7 +11,7 @@ import { Obd2ResultCard } from "@/components/diagnostics/obd2-result-card";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 import type { Obd2Entry } from "@/lib/obd2-dataset";
 import type { PricingResult } from "@/lib/pricing";
-import { ArrowLeft, Camera, ScanLine, Stethoscope, Loader2, Sparkles, Wrench } from "lucide-react";
+import { Camera, ScanLine, Stethoscope, Loader2, Sparkles, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/history/diagnostic/$id")({
   component: DiagnosticDetailPage,
