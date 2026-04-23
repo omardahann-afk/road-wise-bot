@@ -52,6 +52,10 @@ import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card"
 import { sampleFrameStats, coachForStep, STEP_GUIDANCE, type CoachingHint } from "@/lib/camera-coaching";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { WalkthroughModal, shouldShowWalkthrough, markWalkthroughSeen } from "@/components/diagnostics/walkthrough-modal";
+import { interpretDetections, type InterpretedDetection } from "@/lib/camera-intelligence";
+import { DetectionChips } from "@/components/diagnostics/detection-chips";
+import { computeDecisionTrust } from "@/lib/decision-trust";
+import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
@@ -504,6 +508,7 @@ function StepScreen(props: {
         <CameraCapture
           stepId={step.id} category={step.category} frame={props.frame} ai={props.ai}
           onFrame={props.onFrame} onAi={props.onAi} vehicle={props.vehicle}
+          onAddCandidate={props.onAddManual}
         />
       )}
 
@@ -531,11 +536,12 @@ function StepScreen(props: {
 
 /* ============================== Camera capture ============================== */
 function CameraCapture({
-  stepId, category, frame, ai, onFrame, onAi, vehicle,
+  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate,
 }: {
   stepId: string; category: Finding["category"]; frame: string | null;
   ai: AiFrameResult | null; onFrame: (dataUrl: string) => void;
   onAi: (ai: AiFrameResult) => void; vehicle: VehicleForm;
+  onAddCandidate: (issue: string, severity: Finding["severity"]) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -547,6 +553,7 @@ function CameraCapture({
   const [loadingModel, setLoadingModel] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
+  const [interpreted, setInterpreted] = useState<InterpretedDetection[]>([]);
   const [coach, setCoach] = useState<CoachingHint | null>(null);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
@@ -635,6 +642,8 @@ function CameraCapture({
           prevPixelsRef.current = pixels;
           setCoach(coachForStep(stepId, stats));
         }
+        // Camera intelligence: interpret detections in automotive terms
+        setInterpreted(interpretDetections(lite, stepId, v.videoWidth, v.videoHeight));
       } catch (e) { console.error(e); }
     }
     rafRef.current = requestAnimationFrame(detectLoop);
