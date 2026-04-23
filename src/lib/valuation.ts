@@ -26,6 +26,13 @@ export interface ValuationOutput {
   delta_vs_avg: number | null;
 }
 
+export interface RepairCostEstimate {
+  low: number;
+  high: number;
+  currency: "USD";
+  breakdown: { issue: string; severity: Finding["severity"]; low: number; high: number }[];
+}
+
 // Make-class base MSRP heuristics (USD, new). Free, no API.
 const LUXURY = ["bmw", "mercedes", "mercedes-benz", "audi", "lexus", "porsche", "tesla", "cadillac", "infiniti", "acura", "genesis", "land rover", "jaguar"];
 const TRUCK = ["ford f", "chevrolet silverado", "ram", "gmc sierra", "toyota tundra", "nissan titan"];
