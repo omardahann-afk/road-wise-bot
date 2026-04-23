@@ -79,8 +79,7 @@ const STEPS: Step[] = [
   { id: "engine_bay", title: "Engine bay", category: "engine", icon: Wrench, instruction: "Open the hood. Capture the engine, belts, fluid reservoirs. Look for leaks, corrosion, frayed belts." },
 ];
 
-// Sofa import workaround (lucide doesn't ship `Sofa` in older builds — use a fallback)
-import { Sofa } from "lucide-react";
+
 
 interface AiFrameResult {
   step_summary: string;
