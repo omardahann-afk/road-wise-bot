@@ -124,6 +124,20 @@ function ValuationDetailPage() {
             </Card>
           )}
 
+          {/* Decision Trust block — rebuilt deterministically from the saved
+              inspection signal so valuation feels as transparent as inspection. */}
+          {fd && val.ai_output?.scores && val.ai_output?.valuation && (() => {
+            const trust = computeDecisionTrust({
+              decision: fd,
+              scores: val.ai_output!.scores!,
+              valuation: val.ai_output!.valuation!,
+              findings: val.ai_output!.findings ?? [],
+              burden: val.ai_output!.burden_cad ?? null,
+              asking_price: val.asking_price,
+            });
+            return <DecisionTrustBlock trust={trust} />;
+          })()}
+
           <Card className="mb-4 bg-gradient-card shadow-card">
             <CardContent className="p-5">
               <h3 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Fair market value</h3>
