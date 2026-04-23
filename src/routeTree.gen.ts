@@ -23,6 +23,9 @@ import { Route as DiagnoseIndexRouteImport } from './routes/diagnose.index'
 import { Route as DiagnoseSymptomRouteImport } from './routes/diagnose.symptom'
 import { Route as DiagnoseObd2RouteImport } from './routes/diagnose.obd2'
 import { Route as DiagnoseCameraRouteImport } from './routes/diagnose.camera'
+import { Route as HistoryValuationIdRouteImport } from './routes/history.valuation.$id'
+import { Route as HistoryInspectionIdRouteImport } from './routes/history.inspection.$id'
+import { Route as HistoryDiagnosticIdRouteImport } from './routes/history.diagnostic.$id'
 
 const VehiclesRoute = VehiclesRouteImport.update({
   id: '/vehicles',
@@ -94,13 +97,28 @@ const DiagnoseCameraRoute = DiagnoseCameraRouteImport.update({
   path: '/diagnose/camera',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoryValuationIdRoute = HistoryValuationIdRouteImport.update({
+  id: '/valuation/$id',
+  path: '/valuation/$id',
+  getParentRoute: () => HistoryRoute,
+} as any)
+const HistoryInspectionIdRoute = HistoryInspectionIdRouteImport.update({
+  id: '/inspection/$id',
+  path: '/inspection/$id',
+  getParentRoute: () => HistoryRoute,
+} as any)
+const HistoryDiagnosticIdRoute = HistoryDiagnosticIdRouteImport.update({
+  id: '/diagnostic/$id',
+  path: '/diagnostic/$id',
+  getParentRoute: () => HistoryRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/beginner': typeof BeginnerRoute
   '/cleaning': typeof CleaningRoute
-  '/history': typeof HistoryRoute
+  '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
   '/repair': typeof RepairRoute
@@ -110,13 +128,16 @@ export interface FileRoutesByFullPath {
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose/': typeof DiagnoseIndexRoute
+  '/history/diagnostic/$id': typeof HistoryDiagnosticIdRoute
+  '/history/inspection/$id': typeof HistoryInspectionIdRoute
+  '/history/valuation/$id': typeof HistoryValuationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/beginner': typeof BeginnerRoute
   '/cleaning': typeof CleaningRoute
-  '/history': typeof HistoryRoute
+  '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
   '/repair': typeof RepairRoute
@@ -126,6 +147,9 @@ export interface FileRoutesByTo {
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose': typeof DiagnoseIndexRoute
+  '/history/diagnostic/$id': typeof HistoryDiagnosticIdRoute
+  '/history/inspection/$id': typeof HistoryInspectionIdRoute
+  '/history/valuation/$id': typeof HistoryValuationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,7 +157,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/beginner': typeof BeginnerRoute
   '/cleaning': typeof CleaningRoute
-  '/history': typeof HistoryRoute
+  '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
   '/repair': typeof RepairRoute
@@ -143,6 +167,9 @@ export interface FileRoutesById {
   '/diagnose/obd2': typeof DiagnoseObd2Route
   '/diagnose/symptom': typeof DiagnoseSymptomRoute
   '/diagnose/': typeof DiagnoseIndexRoute
+  '/history/diagnostic/$id': typeof HistoryDiagnosticIdRoute
+  '/history/inspection/$id': typeof HistoryInspectionIdRoute
+  '/history/valuation/$id': typeof HistoryValuationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +188,9 @@ export interface FileRouteTypes {
     | '/diagnose/obd2'
     | '/diagnose/symptom'
     | '/diagnose/'
+    | '/history/diagnostic/$id'
+    | '/history/inspection/$id'
+    | '/history/valuation/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +207,9 @@ export interface FileRouteTypes {
     | '/diagnose/obd2'
     | '/diagnose/symptom'
     | '/diagnose'
+    | '/history/diagnostic/$id'
+    | '/history/inspection/$id'
+    | '/history/valuation/$id'
   id:
     | '__root__'
     | '/'
@@ -193,6 +226,9 @@ export interface FileRouteTypes {
     | '/diagnose/obd2'
     | '/diagnose/symptom'
     | '/diagnose/'
+    | '/history/diagnostic/$id'
+    | '/history/inspection/$id'
+    | '/history/valuation/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -200,7 +236,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BeginnerRoute: typeof BeginnerRoute
   CleaningRoute: typeof CleaningRoute
-  HistoryRoute: typeof HistoryRoute
+  HistoryRoute: typeof HistoryRouteWithChildren
   InspectionRoute: typeof InspectionRoute
   ProfileRoute: typeof ProfileRoute
   RepairRoute: typeof RepairRoute
@@ -312,15 +348,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiagnoseCameraRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/history/valuation/$id': {
+      id: '/history/valuation/$id'
+      path: '/valuation/$id'
+      fullPath: '/history/valuation/$id'
+      preLoaderRoute: typeof HistoryValuationIdRouteImport
+      parentRoute: typeof HistoryRoute
+    }
+    '/history/inspection/$id': {
+      id: '/history/inspection/$id'
+      path: '/inspection/$id'
+      fullPath: '/history/inspection/$id'
+      preLoaderRoute: typeof HistoryInspectionIdRouteImport
+      parentRoute: typeof HistoryRoute
+    }
+    '/history/diagnostic/$id': {
+      id: '/history/diagnostic/$id'
+      path: '/diagnostic/$id'
+      fullPath: '/history/diagnostic/$id'
+      preLoaderRoute: typeof HistoryDiagnosticIdRouteImport
+      parentRoute: typeof HistoryRoute
+    }
   }
 }
+
+interface HistoryRouteChildren {
+  HistoryDiagnosticIdRoute: typeof HistoryDiagnosticIdRoute
+  HistoryInspectionIdRoute: typeof HistoryInspectionIdRoute
+  HistoryValuationIdRoute: typeof HistoryValuationIdRoute
+}
+
+const HistoryRouteChildren: HistoryRouteChildren = {
+  HistoryDiagnosticIdRoute: HistoryDiagnosticIdRoute,
+  HistoryInspectionIdRoute: HistoryInspectionIdRoute,
+  HistoryValuationIdRoute: HistoryValuationIdRoute,
+}
+
+const HistoryRouteWithChildren =
+  HistoryRoute._addFileChildren(HistoryRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   BeginnerRoute: BeginnerRoute,
   CleaningRoute: CleaningRoute,
-  HistoryRoute: HistoryRoute,
+  HistoryRoute: HistoryRouteWithChildren,
   InspectionRoute: InspectionRoute,
   ProfileRoute: ProfileRoute,
   RepairRoute: RepairRoute,
