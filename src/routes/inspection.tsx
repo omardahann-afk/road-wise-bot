@@ -844,12 +844,12 @@ function FindingsList({ findings, onRemove }: { findings: Finding[]; onRemove: (
 
 /* ============================== Report screen ============================== */
 function ReportScreen({
-  vehicle, findings, scores, valuation, repairBurden, finalDecision, ai, submitting, inspectionId, onRestart,
+  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, onRestart,
 }: {
   vehicle: VehicleForm; findings: Finding[]; scores: InspectionScores;
-  valuation: ValuationOutput; repairBurden: RepairCostEstimate; finalDecision: FinalDecision;
-  ai: AiFinalResult | null; submitting: boolean; inspectionId: string | null;
-  onRestart: () => void;
+  valuation: ValuationOutput; repairBurden: RepairCostEstimate; burdenCAD: BurdenResult | null;
+  finalDecision: FinalDecision; ai: AiFinalResult | null; submitting: boolean;
+  inspectionId: string | null; onRestart: () => void;
 }) {
   const decision = finalDecision.decision;
   const decisionMeta = {
