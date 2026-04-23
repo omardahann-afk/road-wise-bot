@@ -551,6 +551,7 @@ function CameraCapture({
   const [loadingModel, setLoadingModel] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
+  const [interpreted, setInterpreted] = useState<InterpretedDetection[]>([]);
   const [coach, setCoach] = useState<CoachingHint | null>(null);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
