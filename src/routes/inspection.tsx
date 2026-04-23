@@ -198,6 +198,13 @@ function InspectionFlow() {
     const burden = estimateRepairBurden(allFindings);
     setRepairBurden(burden);
 
+    const burdenCad = estimateBurdenCAD(allFindings, {
+      year: Number(vehicle.year) || null,
+      make: vehicle.make,
+      model: vehicle.model,
+    });
+    setBurdenCAD(burdenCad);
+
     const fd = computeFinalDecision({
       valuation: val,
       scores: computedScores,
