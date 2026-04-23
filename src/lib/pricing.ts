@@ -270,9 +270,25 @@ export function pricingForFinding(f: Finding, vehicle?: { year?: number | null; 
   });
 }
 
-export function formatCAD(n: number): string {
+/* ---------------------------------------------------------------------- */
+/*  Canonical money formatting — CAD everywhere unless told otherwise.    */
+/* ---------------------------------------------------------------------- */
+
+export function formatCAD(n: number | null | undefined): string {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
   return `CA$${Math.round(n).toLocaleString("en-CA")}`;
 }
+
+/** Format a low–high range as "CA$1,200 – CA$2,400" or single value if equal. */
+export function formatCADRange(lo: number | null | undefined, hi: number | null | undefined): string {
+  if (lo === null || lo === undefined || hi === null || hi === undefined) return "—";
+  if (Math.round(lo) === Math.round(hi)) return formatCAD(lo);
+  return `${formatCAD(lo)} – ${formatCAD(hi)}`;
+}
+
+/** Alias for app-wide consistency: prefer formatMoney() in new code. */
+export const formatMoney = formatCAD;
+export const formatMoneyRange = formatCADRange;
 
 /* ---------------------------------------------------------------------- */
 /*  Aggregate burden across many findings (CAD).                          */

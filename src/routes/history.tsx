@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -15,8 +16,11 @@ import {
   ShieldAlert,
   TrendingDown,
   Wrench,
+  Banknote,
+  Filter,
 } from "lucide-react";
 import { severityClass } from "@/lib/severity";
+import { formatCAD } from "@/lib/pricing";
 
 export const Route = createFileRoute("/history")({
   component: HistoryPage,
@@ -28,39 +32,81 @@ interface DiagRow {
   summary: string | null;
   severity: string | null;
   created_at: string;
+  ai_output: { pricing?: { low_estimate: number; average_estimate: number; high_estimate: number; issue_label?: string } } | null;
 }
 
 interface InspectionRow {
   id: string;
   vehicle_info: { year?: number; make?: string; model?: string; mileage?: number };
   asking_price: number | null;
-  scores: { overall_score?: number; risk_flags?: string[] } | null;
+  scores: {
+    overall_score?: number;
+    risk_flags?: string[];
+    repair_burden?: { low: number; high: number };
+    burden_cad?: { low: number; high: number; average: number };
+    final_decision?: { decision?: string; net_value?: number | null };
+  } | null;
   recommendation: string | null;
   created_at: string;
   findings: { severity: string }[] | null;
 }
 
+interface ValRow {
+  id: string;
+  vehicle_info: { year?: number; make?: string; model?: string };
+  asking_price: number | null;
+  fair_value_low: number | null;
+  fair_value_avg: number | null;
+  fair_value_high: number | null;
+  decision: string | null;
+  created_at: string;
+}
+
+type SortMode = "newest" | "highest_burden" | "decision";
+
 function HistoryPage() {
   const { user, loading: authLoading } = useAuth();
   const [diags, setDiags] = useState<DiagRow[]>([]);
   const [inspections, setInspections] = useState<InspectionRow[]>([]);
+  const [valuations, setValuations] = useState<ValRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<SortMode>("newest");
+  const [decisionFilter, setDecisionFilter] = useState<"ALL" | "BUY" | "NEGOTIATE" | "AVOID">("ALL");
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
     (async () => {
-      const [d, i] = await Promise.all([
-        supabase.from("diagnostics").select("id,mode,summary,severity,created_at")
+      const [d, i, v] = await Promise.all([
+        supabase.from("diagnostics").select("id,mode,summary,severity,created_at,ai_output")
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("inspections").select("id,vehicle_info,asking_price,scores,recommendation,findings,created_at")
+          .order("created_at", { ascending: false }).limit(50),
+        supabase.from("valuation_reports").select("id,vehicle_info,asking_price,fair_value_low,fair_value_avg,fair_value_high,decision,created_at")
           .order("created_at", { ascending: false }).limit(50),
       ]);
       setDiags((d.data as DiagRow[] | null) ?? []);
       setInspections((i.data as InspectionRow[] | null) ?? []);
+      setValuations((v.data as ValRow[] | null) ?? []);
       setLoading(false);
     })();
   }, [user, authLoading]);
+
+  const sortedInspections = useMemo(() => {
+    let rows = [...inspections];
+    if (decisionFilter !== "ALL") {
+      rows = rows.filter((r) => r.recommendation === decisionFilter);
+    }
+    if (sort === "highest_burden") {
+      rows.sort((a, b) => (b.scores?.burden_cad?.high ?? 0) - (a.scores?.burden_cad?.high ?? 0));
+    } else if (sort === "decision") {
+      const order: Record<string, number> = { AVOID: 0, NEGOTIATE: 1, BUY: 2 };
+      rows.sort((a, b) => (order[a.recommendation ?? ""] ?? 99) - (order[b.recommendation ?? ""] ?? 99));
+    } else {
+      rows.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+    }
+    return rows;
+  }, [inspections, sort, decisionFilter]);
 
   return (
     <AppShell title="History">
@@ -68,7 +114,7 @@ function HistoryPage() {
         <Badge variant="outline" className="mb-2 text-[10px]">Activity</Badge>
         <h1 className="text-3xl font-bold tracking-tight">History</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          All your diagnostics, inspections, and saved reports.
+          Diagnostics, inspections, and valuation reports — with repair impact at a glance.
         </p>
       </div>
 
@@ -77,11 +123,44 @@ function HistoryPage() {
 
       {user && !loading && inspections.length > 0 && (
         <section className="mb-6">
-          <h2 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Saved inspections ({inspections.length})
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <h2 className="mr-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Saved inspections ({sortedInspections.length})
+            </h2>
+            <Filter className="h-3 w-3 text-muted-foreground" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortMode)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-[11px]"
+            >
+              <option value="newest">Newest</option>
+              <option value="highest_burden">Highest burden</option>
+              <option value="decision">Avoid → Buy</option>
+            </select>
+            <select
+              value={decisionFilter}
+              onChange={(e) => setDecisionFilter(e.target.value as typeof decisionFilter)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-[11px]"
+            >
+              <option value="ALL">All decisions</option>
+              <option value="BUY">Buy</option>
+              <option value="NEGOTIATE">Negotiate</option>
+              <option value="AVOID">Avoid</option>
+            </select>
+          </div>
           <ul className="space-y-3">
-            {inspections.map((r) => <InspectionCard key={r.id} row={r} />)}
+            {sortedInspections.map((r) => <InspectionCard key={r.id} row={r} />)}
+          </ul>
+        </section>
+      )}
+
+      {user && !loading && valuations.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Valuation reports ({valuations.length})
+          </h2>
+          <ul className="space-y-2">
+            {valuations.map((r) => <ValuationCard key={r.id} row={r} />)}
           </ul>
         </section>
       )}
@@ -92,43 +171,23 @@ function HistoryPage() {
             Diagnostics ({diags.length})
           </h2>
           <ul className="space-y-2">
-            {diags.map((r) => {
-              const Icon = r.mode === "camera" ? Camera : r.mode === "obd2" ? ScanLine : Stethoscope;
-              return (
-                <li key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-gradient-card p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        {r.mode}
-                      </p>
-                      {r.severity && (
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${severityClass(r.severity)}`}>
-                          {r.severity}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm">{r.summary ?? "—"}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {new Date(r.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
+            {diags.map((r) => <DiagnosticCard key={r.id} row={r} />)}
           </ul>
         </section>
       )}
 
-      {user && !loading && inspections.length === 0 && diags.length === 0 && (
+      {user && !loading && inspections.length === 0 && diags.length === 0 && valuations.length === 0 && (
         <Card className="bg-gradient-card">
           <CardContent className="flex flex-col items-center gap-2 p-8 text-center">
             <HistoryIcon className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               No history yet — try the OBD2 lookup, symptom checker, or used car inspection.
             </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <Button asChild size="sm" variant="outline"><Link to="/inspection">Inspection</Link></Button>
+              <Button asChild size="sm" variant="outline"><Link to="/diagnose">Diagnose</Link></Button>
+              <Button asChild size="sm" variant="outline"><Link to="/valuation">Valuation</Link></Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -136,12 +195,52 @@ function HistoryPage() {
   );
 }
 
+function DiagnosticCard({ row }: { row: DiagRow }) {
+  const Icon = row.mode === "camera" ? Camera : row.mode === "obd2" ? ScanLine : Stethoscope;
+  const pricing = row.ai_output?.pricing;
+  return (
+    <li className="flex items-start gap-3 rounded-2xl border border-border bg-gradient-card p-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {row.mode}
+          </p>
+          {row.severity && (
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${severityClass(row.severity)}`}>
+              {row.severity}
+            </span>
+          )}
+        </div>
+        <p className="text-sm">{row.summary ?? "—"}</p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">
+            {new Date(row.created_at).toLocaleString()}
+          </p>
+          {pricing && (
+            <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning">
+              <Banknote className="mr-1 inline h-3 w-3" />
+              {formatCAD(pricing.low_estimate)}–{formatCAD(pricing.high_estimate)}
+            </span>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 function InspectionCard({ row }: { row: InspectionRow }) {
   const v = row.vehicle_info ?? {};
   const overall = row.scores?.overall_score ?? null;
+  const burdenCad = row.scores?.burden_cad ?? null;
+  const burdenUsd = row.scores?.repair_burden ?? null;
+  const burden = burdenCad ?? burdenUsd; // prefer CAD snapshot
   const riskCount = row.scores?.risk_flags?.length ?? 0;
   const findingsCount = row.findings?.length ?? 0;
   const decision = row.recommendation as "BUY" | "NEGOTIATE" | "AVOID" | null;
+  const netValue = row.scores?.final_decision?.net_value ?? null;
 
   const meta = decision ? {
     BUY: { tone: "border-success/40 bg-success/10 text-success", icon: ShieldCheck },
@@ -165,7 +264,7 @@ function InspectionCard({ row }: { row: InspectionRow }) {
                 </h3>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {v.mileage ? `${v.mileage.toLocaleString()} mi` : ""}
-                  {row.asking_price ? ` · Asking $${row.asking_price.toLocaleString()}` : ""}
+                  {row.asking_price ? ` · Asking ${formatCAD(row.asking_price)}` : ""}
                 </p>
               </div>
               {meta && decision && (
@@ -175,6 +274,27 @@ function InspectionCard({ row }: { row: InspectionRow }) {
                 </span>
               )}
             </div>
+
+            {/* Pricing strip */}
+            {(burden || netValue !== null) && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {burden && (
+                  <div className="rounded-lg border border-warning/30 bg-warning/5 px-2.5 py-1.5">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-warning/80">Repair burden</div>
+                    <div className="text-xs font-black text-warning">
+                      {formatCAD(burden.low)}–{formatCAD(burden.high)}
+                    </div>
+                  </div>
+                )}
+                {netValue !== null && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-primary/80">Net value</div>
+                    <div className="text-xs font-black text-primary">{formatCAD(netValue)}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {overall !== null && (
                 <span className="rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-[10px] font-semibold">
@@ -199,6 +319,48 @@ function InspectionCard({ row }: { row: InspectionRow }) {
           <Link to="/repair" className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
             <Wrench className="mr-1 inline h-3 w-3" /> Repair workflows
           </Link>
+          <Link to="/valuation" className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary">
+            <Banknote className="mr-1 inline h-3 w-3" /> Re-value
+          </Link>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function ValuationCard({ row }: { row: ValRow }) {
+  const v = row.vehicle_info ?? {};
+  const decision = row.decision as "BUY" | "NEGOTIATE" | "AVOID" | null;
+  const meta = decision ? {
+    BUY: { tone: "border-success/40 bg-success/10 text-success" },
+    NEGOTIATE: { tone: "border-warning/40 bg-warning/10 text-warning" },
+    AVOID: { tone: "border-destructive/40 bg-destructive/10 text-destructive" },
+  }[decision] : null;
+
+  return (
+    <li className="rounded-2xl border border-border bg-gradient-card p-3">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
+          <Banknote className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-bold">
+              {v.year ?? "?"} {v.make ?? ""} {v.model ?? ""}
+            </p>
+            {meta && decision && (
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black uppercase ${meta.tone}`}>
+                {decision}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Fair value {formatCAD(row.fair_value_low ?? 0)}–{formatCAD(row.fair_value_high ?? 0)}
+            {row.asking_price ? ` · Asking ${formatCAD(row.asking_price)}` : ""}
+          </p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            {new Date(row.created_at).toLocaleString()}
+          </p>
         </div>
       </div>
     </li>
