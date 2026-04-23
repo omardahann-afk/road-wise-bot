@@ -12,6 +12,8 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { callAi } from "@/lib/ai";
 import { severityClass } from "@/lib/severity";
+import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
+import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 
 export const Route = createFileRoute("/diagnose/symptom")({
   component: SymptomChecker,
