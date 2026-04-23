@@ -44,6 +44,18 @@ export const Route = createRootRoute({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "AutoSage AI — Your AI Mechanic" },
+      { name: "description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { name: "twitter:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/91b6b232-b3b4-4546-8701-74ad7ec0ff61/id-preview-b3ffd2af--9b07d72d-6f11-45f7-b991-8e31df39d837.lovable.app-1776969919841.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/91b6b232-b3b4-4546-8701-74ad7ec0ff61/id-preview-b3ffd2af--9b07d72d-6f11-45f7-b991-8e31df39d837.lovable.app-1776969919841.png" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
