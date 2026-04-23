@@ -335,6 +335,13 @@ function InspectionFlow() {
           }}
         />
       )}
+      <WalkthroughModal
+        open={showWalk}
+        onClose={(dontShow) => {
+          setShowWalk(false);
+          if (dontShow) markWalkthroughSeen();
+        }}
+      />
     </AppShell>
   );
 }
