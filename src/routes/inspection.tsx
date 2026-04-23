@@ -508,6 +508,7 @@ function StepScreen(props: {
         <CameraCapture
           stepId={step.id} category={step.category} frame={props.frame} ai={props.ai}
           onFrame={props.onFrame} onAi={props.onAi} vehicle={props.vehicle}
+          onAddCandidate={props.onAddManual}
         />
       )}
 
