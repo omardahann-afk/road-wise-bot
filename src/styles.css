@@ -58,58 +58,60 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Default = dark theme (premium automotive look) */
+/* Default = dark theme — AutoSage AI premium automotive identity.
+ * Near-black background, electric-blue accent, neutral graphite structure.
+ * Status colors are deterministic: green = BUY, amber = NEGOTIATE, red = AVOID. */
 :root {
-  --radius: 1rem;
-  --background: oklch(0.13 0.012 250);
-  --foreground: oklch(0.97 0.005 250);
-  --card: oklch(0.18 0.016 250);
-  --card-foreground: oklch(0.97 0.005 250);
-  --popover: oklch(0.18 0.016 250);
-  --popover-foreground: oklch(0.97 0.005 250);
-  --primary: oklch(0.80 0.18 65);          /* refined amber/gold */
-  --primary-foreground: oklch(0.16 0.02 60);
-  --primary-glow: oklch(0.88 0.20 75);
-  --secondary: oklch(0.25 0.02 250);
-  --secondary-foreground: oklch(0.97 0.005 250);
-  --muted: oklch(0.22 0.018 250);
-  --muted-foreground: oklch(0.70 0.02 250);
-  --accent: oklch(0.32 0.06 220);
-  --accent-foreground: oklch(0.97 0.005 250);
-  --destructive: oklch(0.62 0.24 25);
+  --radius: 0.875rem;
+  --background: oklch(0.10 0.006 245);          /* deep near-black */
+  --foreground: oklch(0.97 0.004 245);
+  --card: oklch(0.145 0.008 245);                /* graphite card */
+  --card-foreground: oklch(0.97 0.004 245);
+  --popover: oklch(0.145 0.008 245);
+  --popover-foreground: oklch(0.97 0.004 245);
+  --primary: oklch(0.70 0.18 245);               /* electric blue */
+  --primary-foreground: oklch(0.10 0.006 245);
+  --primary-glow: oklch(0.78 0.16 230);          /* cyan-leaning glow */
+  --secondary: oklch(0.20 0.008 245);
+  --secondary-foreground: oklch(0.97 0.004 245);
+  --muted: oklch(0.18 0.008 245);
+  --muted-foreground: oklch(0.66 0.012 245);
+  --accent: oklch(0.24 0.04 245);                /* subtle blue-tinted surface */
+  --accent-foreground: oklch(0.97 0.004 245);
+  --destructive: oklch(0.62 0.24 25);            /* AVOID — red */
   --destructive-foreground: oklch(0.98 0.01 25);
-  --success: oklch(0.72 0.18 155);
-  --success-foreground: oklch(0.14 0.02 150);
-  --warning: oklch(0.80 0.16 80);
-  --warning-foreground: oklch(0.18 0.02 80);
-  --border: oklch(0.27 0.02 250);
-  --input: oklch(0.26 0.02 250);
-  --ring: oklch(0.80 0.18 65);
-  --chart-1: oklch(0.80 0.18 65);
-  --chart-2: oklch(0.72 0.18 155);
-  --chart-3: oklch(0.65 0.20 250);
+  --success: oklch(0.70 0.18 152);               /* BUY — green */
+  --success-foreground: oklch(0.12 0.02 150);
+  --warning: oklch(0.78 0.17 75);                /* NEGOTIATE — amber */
+  --warning-foreground: oklch(0.16 0.02 75);
+  --border: oklch(0.22 0.008 245);
+  --input: oklch(0.20 0.008 245);
+  --ring: oklch(0.70 0.18 245);
+  --chart-1: oklch(0.70 0.18 245);
+  --chart-2: oklch(0.70 0.18 152);
+  --chart-3: oklch(0.78 0.17 75);
   --chart-4: oklch(0.62 0.24 25);
-  --chart-5: oklch(0.80 0.16 80);
-  --sidebar: oklch(0.16 0.016 250);
-  --sidebar-foreground: oklch(0.97 0.005 250);
-  --sidebar-primary: oklch(0.80 0.18 65);
-  --sidebar-primary-foreground: oklch(0.16 0.02 60);
-  --sidebar-accent: oklch(0.22 0.018 250);
-  --sidebar-accent-foreground: oklch(0.97 0.005 250);
-  --sidebar-border: oklch(0.27 0.02 250);
-  --sidebar-ring: oklch(0.80 0.18 65);
+  --chart-5: oklch(0.78 0.16 230);
+  --sidebar: oklch(0.12 0.006 245);
+  --sidebar-foreground: oklch(0.97 0.004 245);
+  --sidebar-primary: oklch(0.70 0.18 245);
+  --sidebar-primary-foreground: oklch(0.10 0.006 245);
+  --sidebar-accent: oklch(0.18 0.008 245);
+  --sidebar-accent-foreground: oklch(0.97 0.004 245);
+  --sidebar-border: oklch(0.22 0.008 245);
+  --sidebar-ring: oklch(0.70 0.18 245);
 
   /* Reusable gradients & shadows — premium automotive */
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-glow));
-  --gradient-card: linear-gradient(160deg, oklch(0.21 0.02 250), oklch(0.16 0.014 250));
-  --gradient-elevated: linear-gradient(160deg, oklch(0.24 0.022 250), oklch(0.17 0.014 250));
-  --gradient-hero: radial-gradient(ellipse at top, oklch(0.32 0.10 65 / 0.32), transparent 60%);
-  --gradient-success: linear-gradient(135deg, oklch(0.72 0.18 155 / 0.18), transparent 70%);
+  --gradient-card: linear-gradient(160deg, oklch(0.17 0.010 245), oklch(0.12 0.006 245));
+  --gradient-elevated: linear-gradient(160deg, oklch(0.20 0.012 245), oklch(0.14 0.008 245));
+  --gradient-hero: radial-gradient(ellipse at top, oklch(0.34 0.14 245 / 0.28), transparent 60%);
+  --gradient-success: linear-gradient(135deg, oklch(0.70 0.18 152 / 0.18), transparent 70%);
   --gradient-danger: linear-gradient(135deg, oklch(0.62 0.24 25 / 0.20), transparent 70%);
-  --gradient-warning: linear-gradient(135deg, oklch(0.80 0.16 80 / 0.20), transparent 70%);
-  --shadow-elegant: 0 10px 40px -12px oklch(0 0 0 / 0.7);
-  --shadow-glow: 0 0 50px -10px oklch(0.80 0.18 65 / 0.45);
-  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px -16px oklch(0 0 0 / 0.6);
+  --gradient-warning: linear-gradient(135deg, oklch(0.78 0.17 75 / 0.20), transparent 70%);
+  --shadow-elegant: 0 10px 40px -12px oklch(0 0 0 / 0.75);
+  --shadow-glow: 0 0 48px -12px oklch(0.70 0.18 245 / 0.55);
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px -16px oklch(0 0 0 / 0.7);
   --shadow-decision: 0 0 80px -20px currentColor;
 }
 
