@@ -29,7 +29,7 @@ export interface ValuationOutput {
 export interface RepairCostEstimate {
   low: number;
   high: number;
-  currency: "USD";
+  currency: "CAD";
   breakdown: { issue: string; severity: Finding["severity"]; low: number; high: number }[];
 }
 
@@ -244,7 +244,7 @@ export function estimateRepairBurden(findings: Finding[]): RepairCostEstimate {
     });
   const low = breakdown.reduce((a, b) => a + b.low, 0);
   const high = breakdown.reduce((a, b) => a + b.high, 0);
-  return { low: Math.round(low), high: Math.round(high), currency: "USD", breakdown };
+  return { low: Math.round(low), high: Math.round(high), currency: "CAD", breakdown };
 }
 
 /* ------------------------------------------------------------------ */
@@ -300,7 +300,7 @@ export function computeFinalDecision(input: FinalDecisionInput): FinalDecision {
   // Repair-burden vs price guard
   if (asking_price && repair.high > asking_price * 0.25) {
     if (decision === "BUY") decision = "NEGOTIATE";
-    reasons.push(`Worst-case repair cost ($${repair.high.toLocaleString()}) exceeds 25% of asking price.`);
+    reasons.push(`Worst-case repair cost (CA$${repair.high.toLocaleString("en-CA")}) exceeds 25% of asking price.`);
   }
   if (asking_price && repair.high > asking_price * 0.5) {
     decision = "AVOID";
@@ -309,10 +309,10 @@ export function computeFinalDecision(input: FinalDecisionInput): FinalDecision {
 
   // Leverage points for negotiation
   if (asking_price && valuation.delta_vs_avg !== null && valuation.delta_vs_avg > 0) {
-    leverage.push(`Asking is $${valuation.delta_vs_avg.toLocaleString()} above fair market average.`);
+    leverage.push(`Asking is CA$${valuation.delta_vs_avg.toLocaleString("en-CA")} above fair market average.`);
   }
   if (repair.high > 0) {
-    leverage.push(`Repair burden up to $${repair.high.toLocaleString()} — request equivalent reduction.`);
+    leverage.push(`Repair burden up to CA$${repair.high.toLocaleString("en-CA")} — request equivalent reduction.`);
   }
   scores.risk_flags.forEach((rf) => leverage.push(rf));
   findings
