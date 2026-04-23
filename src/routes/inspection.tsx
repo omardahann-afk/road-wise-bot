@@ -47,6 +47,8 @@ import {
   type RepairCostEstimate,
   type ValuationOutput,
 } from "@/lib/valuation";
+import { estimateBurdenCAD, pricingForFinding, formatCAD, type BurdenResult } from "@/lib/pricing";
+import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
