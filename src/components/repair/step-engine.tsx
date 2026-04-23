@@ -1,0 +1,238 @@
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  ShieldAlert,
+  Wrench,
+  Sparkles,
+} from "lucide-react";
+import {
+  type EngineStep,
+  type RepairProgress,
+  loadProgress,
+  saveProgress,
+  clearProgress,
+} from "@/lib/repair-engine";
+import type { RepairWorkflow } from "@/lib/valuation";
+
+/**
+ * Step Engine — checklist-style, navigable repair walkthrough.
+ *
+ * - Persists progress per (workflow, issue) in localStorage so users can resume.
+ * - Shows step number, title, instruction, why it matters, tools, warnings.
+ * - Visible progress bar + Next / Back / Mark complete CTAs.
+ */
+export function StepEngine({
+  workflow,
+  issue,
+  steps,
+  onAllComplete,
+}: {
+  workflow: RepairWorkflow;
+  issue?: string;
+  steps: EngineStep[];
+  onAllComplete?: () => void;
+}) {
+  const total = steps.length;
+  const initial = useMemo<RepairProgress>(() => {
+    const loaded = loadProgress(workflow, issue);
+    if (loaded && loaded.total === total) return loaded;
+    return { workflow, issue, current_index: 0, completed: [], total, updated_at: Date.now() };
+  }, [workflow, issue, total]);
+
+  const [progress, setProgress] = useState<RepairProgress>(initial);
+
+  useEffect(() => {
+    saveProgress(progress);
+  }, [progress]);
+
+  const idx = Math.min(progress.current_index, total - 1);
+  const step = steps[idx];
+  const completed = progress.completed.includes(idx);
+  const allDone = progress.completed.length >= total;
+  const pct = Math.round((progress.completed.length / total) * 100);
+
+  function markComplete() {
+    setProgress((p) => {
+      const next = new Set(p.completed);
+      next.add(idx);
+      const allDone = next.size >= total;
+      if (allDone) onAllComplete?.();
+      return { ...p, completed: Array.from(next) };
+    });
+  }
+
+  function goNext() {
+    if (!progress.completed.includes(idx)) {
+      // auto-mark on next so the bar advances
+      setProgress((p) => {
+        const next = new Set(p.completed);
+        next.add(idx);
+        return {
+          ...p,
+          completed: Array.from(next),
+          current_index: Math.min(total - 1, idx + 1),
+        };
+      });
+    } else {
+      setProgress((p) => ({ ...p, current_index: Math.min(total - 1, idx + 1) }));
+    }
+  }
+
+  function goPrev() {
+    setProgress((p) => ({ ...p, current_index: Math.max(0, idx - 1) }));
+  }
+
+  function reset() {
+    clearProgress(workflow, issue);
+    setProgress({ workflow, issue, current_index: 0, completed: [], total, updated_at: Date.now() });
+  }
+
+  if (!step) return null;
+
+  return (
+    <div className="space-y-4">
+      {/* Progress + meta header */}
+      <Card className="bg-gradient-elevated shadow-card">
+        <CardContent className="p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                Repair engine
+              </span>
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              Step {idx + 1} / {total} · {pct}% complete
+            </div>
+          </div>
+          <Progress value={pct} className="h-1.5" />
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {steps.map((_, i) => {
+              const isDone = progress.completed.includes(i);
+              const isActive = i === idx;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setProgress((p) => ({ ...p, current_index: i }))}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg border text-[11px] font-bold transition-all ${
+                    isActive
+                      ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                      : isDone
+                        ? "border-success/40 bg-success/15 text-success"
+                        : "border-border/60 bg-background/30 text-muted-foreground hover:border-primary/40"
+                  }`}
+                  aria-label={`Go to step ${i + 1}`}
+                >
+                  {isDone && !isActive ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </button>
+              );
+            })}
+          </div>
+          {progress.completed.length > 0 && (
+            <button
+              type="button"
+              onClick={reset}
+              className="mt-3 inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset progress
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active step card */}
+      <Card className={`border-2 ${completed ? "border-success/40 bg-success/5" : "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card"}`}>
+        <CardContent className="p-5">
+          <div className="mb-3 flex items-center gap-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-base font-black shadow-glow ${
+              completed
+                ? "bg-success text-success-foreground"
+                : "bg-gradient-to-br from-primary to-primary-glow text-primary-foreground"
+            }`}>
+              {completed ? <Check className="h-5 w-5" /> : step.step_number}
+            </div>
+            <div className="flex-1">
+              <Badge variant="outline" className="mb-1 text-[10px]">
+                Step {step.step_number} of {total}
+              </Badge>
+              <h3 className="text-lg font-bold leading-tight">{step.title}</h3>
+            </div>
+          </div>
+
+          <p className="text-sm text-foreground/90">{step.instruction}</p>
+
+          {step.why_it_matters && (
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <h4 className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                <Sparkles className="h-3 w-3" /> Why it matters
+              </h4>
+              <p className="text-xs">{step.why_it_matters}</p>
+            </div>
+          )}
+
+          {step.tools && step.tools.length > 0 && (
+            <div className="mt-3">
+              <h4 className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Tools required
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {step.tools.map((t, i) => (
+                  <span key={i} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px]">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step.warning && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-warning">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-xs">{step.warning}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* CTAs */}
+      <div className="sticky bottom-20 z-10 flex flex-wrap gap-2 rounded-2xl border border-border bg-card/95 p-2 shadow-card backdrop-blur">
+        <Button variant="outline" onClick={goPrev} disabled={idx === 0}>
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Button>
+        <Button
+          variant={completed ? "secondary" : "outline"}
+          onClick={markComplete}
+          disabled={completed}
+          className={completed ? "" : "border-success/40 text-success hover:bg-success/10"}
+        >
+          {completed ? <><Check className="h-4 w-4" /> Completed</> : <><Check className="h-4 w-4" /> Mark complete</>}
+        </Button>
+        <Button className="flex-1 shadow-glow" onClick={goNext} disabled={idx >= total - 1 && completed}>
+          {idx >= total - 1 ? "Finish" : "Next step"} <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {allDone && (
+        <Card className="border-success/40 bg-success/10">
+          <CardContent className="p-4 text-sm text-success">
+            <div className="flex items-center gap-2 font-semibold">
+              <Check className="h-4 w-4" /> All steps complete
+            </div>
+            <p className="mt-1 text-xs opacity-90">
+              Verify the repair matches the original issue. Save evidence photos
+              for your records.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
