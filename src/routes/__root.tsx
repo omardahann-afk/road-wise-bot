@@ -31,16 +31,31 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#1a1f2e" },
-      { title: "AutoSage AI — Know Before You Buy" },
-      { name: "description", content: "Inspect, diagnose, value, and repair any vehicle with AutoSage AI. Get real-time camera guidance, accurate pricing, and confident BUY, NEGOTIATE, or AVOID decisions." },
-      { property: "og:title", content: "AutoSage AI — Know Before You Buy" },
-      { property: "og:description", content: "Scan any car, detect issues, estimate repair costs, and decide if it's worth it. AutoSage AI is your all-in-one automotive decision engine." },
+      { title: "AutoSage AI — Your AI Mechanic" },
+      {
+        name: "description",
+        content:
+          "Diagnose car issues with AI. Live camera diagnostics, OBD2 code lookup, symptom checker, repair guides, and used-car valuation.",
+      },
+      { property: "og:title", content: "AutoSage AI — Your AI Mechanic" },
+      {
+        property: "og:description",
+        content: "AI-powered diagnostics, repairs, and used-car inspection — in your pocket.",
+      },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/preview.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "AutoSage AI — AI Car Inspector & Repair Assistant" },
-      { name: "twitter:description", content: "Inspect, price, and fix vehicles with confidence using real-time AI guidance." },
-      { name: "twitter:image", content: "/preview.png" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "AutoSage AI — Your AI Mechanic" },
+      { name: "description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { name: "twitter:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
