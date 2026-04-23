@@ -34,24 +34,27 @@ export const Route = createRootRoute({
       { title: "AutoSage AI — Your AI Mechanic" },
       {
         name: "description",
-        content: "Diagnose car issues with AI using camera diagnostics, OBD2 lookup, symptom checks, repair guides, and used-car valuation.",
+        content:
+          "Diagnose car issues with AI. Live camera diagnostics, OBD2 code lookup, symptom checker, repair guides, and used-car valuation.",
       },
       { property: "og:title", content: "AutoSage AI — Your AI Mechanic" },
       {
         property: "og:description",
-        content: "AI-powered car inspections, diagnostics, repair guidance, and valuation in one app.",
+        content: "AI-powered diagnostics, repairs, and used-car inspection — in your pocket.",
       },
       { property: "og:type", content: "website" },
-      {
-        property: "og:image",
-        content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp",
-      },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "AutoSage AI — Your AI Mechanic" },
-      {
-        name: "twitter:description",
-        content: "Inspect cars, spot problems fast, understand repair costs, and make smarter buy-or-skip decisions.",
-      },
+      { name: "description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { name: "twitter:description", content: "**AutoSage AI — Know Before You Buy. Fix What Matters.**
+
+AutoSage AI is your all-in-one automotive intelligence platform built to help you **inspect, diagnose," },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/qFznNXPQdhc7R5zU5PF6Mbf7FqC2/social-images/social-1776971165939-autosage.webp" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
