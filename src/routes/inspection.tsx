@@ -1078,6 +1078,11 @@ function ReportScreen({
                     <ul className="space-y-2">
                       {items.map((f, i) => {
                         const handoff = classifyRepair(f);
+                        const pricing = pricingForFinding(f, {
+                          year: Number(vehicle.year) || null,
+                          make: vehicle.make,
+                          model: vehicle.model,
+                        });
                         return (
                           <li key={i} className="rounded-xl border border-border/60 bg-background/40 p-3">
                             <div className="flex items-start gap-2">
@@ -1087,7 +1092,7 @@ function ReportScreen({
                               <div className="flex-1">
                                 <div className="text-sm font-medium">{f.issue}</div>
                                 <div className="mt-0.5 text-[11px] text-muted-foreground">
-                                  Location: {f.step.replace(/_/g, " ")}
+                                  Location: {f.step.replace(/_/g, " ")} · Est. {formatCAD(pricing.low_estimate)}–{formatCAD(pricing.high_estimate)}
                                 </div>
                               </div>
                             </div>
