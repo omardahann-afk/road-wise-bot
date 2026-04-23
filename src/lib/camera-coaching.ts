@@ -54,7 +54,18 @@ const VEHICLE_CLASSES = new Set([
   "person", // for scale calibration
 ]);
 
-/** Compute a fast luma + motion delta from a downscaled video frame. */
+const EMPTY_STATS: FrameStats = {
+  brightness: 0,
+  motion: 0,
+  largestArea: 0,
+  centerOffset: 0.5,
+  count: 0,
+  highlightClip: 0,
+  shadowClip: 0,
+  contrast: 0,
+};
+
+/** Compute a fast luma + motion + clipping snapshot from a downscaled video frame. */
 export function sampleFrameStats(
   video: HTMLVideoElement,
   prevPixels: Uint8ClampedArray | null,
@@ -63,7 +74,7 @@ export function sampleFrameStats(
 ): { stats: FrameStats; pixels: Uint8ClampedArray | null } {
   if (video.readyState < 2 || video.videoWidth === 0) {
     return {
-      stats: { brightness: 0, motion: 0, largestArea: 0, centerOffset: 0.5, count: detections.length },
+      stats: { ...EMPTY_STATS, count: detections.length },
       pixels: prevPixels,
     };
   }
@@ -71,25 +82,43 @@ export function sampleFrameStats(
   scratchCanvas.width = W;
   scratchCanvas.height = H;
   const ctx = scratchCanvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return { stats: { brightness: 0, motion: 0, largestArea: 0, centerOffset: 0.5, count: detections.length }, pixels: prevPixels };
+  if (!ctx) {
+    return {
+      stats: { ...EMPTY_STATS, count: detections.length },
+      pixels: prevPixels,
+    };
+  }
   ctx.drawImage(video, 0, 0, W, H);
   const data = ctx.getImageData(0, 0, W, H).data;
+  const px = W * H;
 
-  // Luma mean (rec601-ish)
+  // Single pass: luma mean + variance + clipping + motion.
   let lumaSum = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    lumaSum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-  }
-  const brightness = lumaSum / (W * H);
-
-  // Motion delta vs prev
+  let lumaSqSum = 0;
+  let highCount = 0;
+  let lowCount = 0;
   let motionSum = 0;
-  if (prevPixels && prevPixels.length === data.length) {
-    for (let i = 0; i < data.length; i += 4) {
-      motionSum += Math.abs(data[i] - prevPixels[i]);
+  const hasPrev = !!(prevPixels && prevPixels.length === data.length);
+
+  for (let i = 0; i < data.length; i += 4) {
+    const luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    lumaSum += luma;
+    lumaSqSum += luma * luma;
+    if (luma > 245) highCount++;
+    else if (luma < 10) lowCount++;
+    if (hasPrev) {
+      motionSum += Math.abs(data[i] - prevPixels![i]);
     }
   }
-  const motion = Math.min(1, motionSum / (W * H * 80)); // 80 = soft cap
+
+  const brightness = lumaSum / px;
+  const variance = lumaSqSum / px - brightness * brightness;
+  const stdDev = Math.sqrt(Math.max(0, variance));
+  // Normalize std-dev: ~70+ is rich contrast, <20 is washed out.
+  const contrast = Math.min(1, stdDev / 70);
+  const highlightClip = highCount / px;
+  const shadowClip = lowCount / px;
+  const motion = Math.min(1, motionSum / (px * 80));
 
   // Largest detection area & centering relative to frame
   const fw = video.videoWidth || 1;
@@ -106,10 +135,19 @@ export function sampleFrameStats(
       cy = (y + h / 2) / fh;
     }
   }
-  const centerOffset = Math.hypot(cx - 0.5, cy - 0.5) * 2; // 0..~1.4
+  const centerOffset = Math.hypot(cx - 0.5, cy - 0.5) * 2;
 
   return {
-    stats: { brightness, motion, largestArea: largest, centerOffset, count: detections.length },
+    stats: {
+      brightness,
+      motion,
+      largestArea: largest,
+      centerOffset,
+      count: detections.length,
+      highlightClip,
+      shadowClip,
+      contrast,
+    },
     pixels: new Uint8ClampedArray(data),
   };
 }
