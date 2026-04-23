@@ -244,7 +244,7 @@ function InspectionFlow() {
             } as never,
             asking_price: askingPrice,
             findings: allFindings as never,
-            scores: { ...computedScores, repair_burden: burden, final_decision: fd } as never,
+            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd } as never,
             recommendation: fd.decision,
             notes: ai.summary,
           })
@@ -314,6 +314,7 @@ function InspectionFlow() {
           scores={scores}
           valuation={valuation}
           repairBurden={repairBurden}
+          burdenCAD={burdenCAD}
           finalDecision={finalDecision}
           ai={aiFinal}
           submitting={submitting}
@@ -321,7 +322,7 @@ function InspectionFlow() {
           onRestart={() => {
             setPhase("setup"); setStepIdx(0); setFindings([]); setStepFrames({}); setAiByStep({});
             setManualNotes({}); setScores(null); setValuation(null); setRepairBurden(null);
-            setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
+            setBurdenCAD(null); setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
           }}
         />
       )}
