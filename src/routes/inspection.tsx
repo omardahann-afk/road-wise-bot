@@ -709,6 +709,17 @@ function CameraCapture({
         )}
       </div>
 
+      {/* Live AI detection chips — appear right under the viewfinder while streaming */}
+      {streaming && interpreted.length > 0 && (
+        <DetectionChips
+          detections={interpreted}
+          onAddFinding={(issue, severity) => {
+            onAddCandidate(issue, severity);
+            toast.success(`Added: ${issue}`);
+          }}
+        />
+      )}
+
       <div className="mb-3 flex flex-wrap gap-2">
         {streaming ? (
           <>
