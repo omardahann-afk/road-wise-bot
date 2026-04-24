@@ -14,6 +14,8 @@ import { callAi } from "@/lib/ai";
 import { severityClass } from "@/lib/severity";
 import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
+import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 
 export const Route = createFileRoute("/diagnose/symptom")({
   component: SymptomChecker,
@@ -47,6 +49,7 @@ function SymptomChecker() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AiSymptomResult | null>(null);
   const { user } = useAuth();
+  const activeVehicle = useActiveVehicleProfile();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -268,6 +271,33 @@ function SymptomChecker() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Real-world insights — pluggable knowledge layer */}
+      {result && result.possible_issues && result.possible_issues.length > 0 && (
+        <RealWorldInsights
+          context={{
+            topic: "symptom",
+            issue:
+              result.possible_issues[0].title ||
+              symptoms ||
+              result.summary ||
+              "",
+            component: result.possible_issues[0].system ?? null,
+            severity:
+              (["info", "low", "medium", "high", "critical"].includes(result.severity)
+                ? result.severity
+                : "medium") as Severity,
+            vehicle: vehicle.make
+              ? {
+                  year: vehicle.year ? Number(vehicle.year) : null,
+                  make: vehicle.make,
+                  model: vehicle.model,
+                  mileage_km: null,
+                }
+              : (activeVehicle ?? null),
+          }}
+        />
       )}
     </AppShell>
   );

@@ -13,6 +13,8 @@ import { lookupObd2, inferObd2Stub, type Obd2Entry } from "@/lib/obd2-dataset";
 import { estimateRepairCost } from "@/lib/pricing";
 import { Obd2ResultCard } from "@/components/diagnostics/obd2-result-card";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
+import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 
 export const Route = createFileRoute("/diagnose/obd2")({
   component: Obd2Lookup,
@@ -36,6 +38,7 @@ function Obd2Lookup() {
   const [aiResult, setAiResult] = useState<AiObd2Result | null>(null);
   const [busy, setBusy] = useState(false);
   const { user } = useAuth();
+  const vehicle = useActiveVehicleProfile();
 
   async function lookup(rawCode?: string, e?: React.FormEvent) {
     e?.preventDefault();
@@ -234,6 +237,19 @@ function Obd2Lookup() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Real-world insights — pluggable knowledge layer */}
+      {grounded && (
+        <RealWorldInsights
+          context={{
+            topic: "obd2",
+            issue: `${grounded.entry.code} — ${grounded.entry.title}`,
+            component: grounded.entry.system,
+            severity: grounded.entry.severity,
+            vehicle: vehicle ?? null,
+          }}
+        />
       )}
     </AppShell>
   );
