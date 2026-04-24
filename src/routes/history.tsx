@@ -83,24 +83,47 @@ function HistoryPage() {
   const [sort, setSort] = useState<SortMode>("newest");
   const [decisionFilter, setDecisionFilter] = useState<"ALL" | "BUY" | "NEGOTIATE" | "AVOID">("ALL");
 
+  const [vehicles, setVehicles] = useState<VehicleLite[]>([]);
+  const [groupByVehicle, setGroupByVehicle] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
     (async () => {
-      const [d, i, v] = await Promise.all([
-        supabase.from("diagnostics").select("id,mode,summary,severity,created_at,ai_output")
+      const [d, i, v, veh] = await Promise.all([
+        supabase.from("diagnostics").select("id,mode,summary,severity,created_at,vehicle_id,ai_output")
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("inspections").select("id,vehicle_info,asking_price,scores,recommendation,findings,created_at")
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("valuation_reports").select("id,vehicle_info,asking_price,fair_value_low,fair_value_avg,fair_value_high,decision,created_at")
           .order("created_at", { ascending: false }).limit(50),
+        supabase.from("vehicles").select("id,nickname,year,make,model"),
       ]);
       setDiags((d.data as DiagRow[] | null) ?? []);
       setInspections((i.data as InspectionRow[] | null) ?? []);
       setValuations((v.data as ValRow[] | null) ?? []);
+      setVehicles((veh.data as VehicleLite[] | null) ?? []);
       setLoading(false);
     })();
   }, [user, authLoading]);
+
+  const diagsByVehicle = useMemo(() => {
+    const map = new Map<string | null, DiagRow[]>();
+    diags.forEach((d) => {
+      const k = d.vehicle_id ?? null;
+      const list = map.get(k) ?? [];
+      list.push(d);
+      map.set(k, list);
+    });
+    return map;
+  }, [diags]);
+
+  const vehicleLabel = (id: string | null): string => {
+    if (!id) return "Unassigned";
+    const v = vehicles.find((x) => x.id === id);
+    if (!v) return "Vehicle";
+    return v.nickname || `${v.year ?? ""} ${v.make ?? ""} ${v.model ?? ""}`.trim() || "Vehicle";
+  };
 
   const sortedInspections = useMemo(() => {
     let rows = [...inspections];
