@@ -335,13 +335,19 @@ function RepairWorkflowDetail(props: {
         );
       })()}
 
-      <StepEngine
-        workflow={props.workflowId}
-        issue={props.issue}
-        steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
-        userId={props.userId}
-      />
-
+      {props.userId ? (
+        <StepEngine
+          workflow={props.workflowId}
+          issue={props.issue}
+          steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
+          userId={props.userId}
+        />
+      ) : (
+        <GuestStepPreview
+          previewStep={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])[0]}
+          totalSteps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]).length}
+        />
+      )}
       {ai && ai.warnings.length > 0 && (
         <Card className="mt-4 border-warning/40 bg-warning/5">
           <CardContent className="p-4">
