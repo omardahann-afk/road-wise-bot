@@ -190,7 +190,13 @@ export function CameraAnalysisResult({
             )}
             {actions.showCleaning && (
               <Button asChild size="sm" variant="outline" className="flex-1">
-                <Link to="/cleaning">
+                <Link
+                  to="/cleaning"
+                  search={{
+                    area: primaryComponent?.name,
+                    issue: primaryComponent?.likely_issue ?? undefined,
+                  }}
+                >
                   <Sparkles className="h-4 w-4" /> Cleaning tips
                 </Link>
               </Button>
