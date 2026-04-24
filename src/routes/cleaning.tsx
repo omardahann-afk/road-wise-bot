@@ -340,7 +340,84 @@ function CleaningPage() {
         </CardContent>
       </Card>
 
-      {analysis ? <CameraAnalysisResult result={analysis} label="Cleaning analysis" /> : null}
+      {analysis ? (
+        <>
+          <CameraAnalysisResult result={analysis} label="Cleaning analysis" />
+          {analysis.cleaning && (
+            <Card className="mt-4 border-primary/30">
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                  <h3 className="text-sm font-semibold">AI cleaning plan</h3>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  {analysis.cleaning.material && (
+                    <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5">
+                      <span className="font-semibold text-foreground">Material:</span>{" "}
+                      <span className="text-muted-foreground">{analysis.cleaning.material}</span>
+                    </span>
+                  )}
+                  {analysis.cleaning.risk_level && (
+                    <span
+                      className={`rounded-full border px-2 py-0.5 font-semibold uppercase tracking-wider ${
+                        analysis.cleaning.risk_level === "high"
+                          ? "border-destructive/40 bg-destructive/10 text-destructive"
+                          : analysis.cleaning.risk_level === "medium"
+                          ? "border-warning/40 bg-warning/10 text-warning"
+                          : "border-success/40 bg-success/10 text-success"
+                      }`}
+                    >
+                      {analysis.cleaning.risk_level} risk
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {analysis.cleaning.safe_products && analysis.cleaning.safe_products.length > 0 && (
+                    <div className="rounded-xl border border-success/30 bg-success/5 p-3">
+                      <div className="mb-1 flex items-center gap-1.5 text-success">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <h4 className="text-xs font-semibold uppercase tracking-wider">Safe to use</h4>
+                      </div>
+                      <ul className="list-disc space-y-0.5 pl-4 text-xs text-foreground">
+                        {analysis.cleaning.safe_products.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {analysis.cleaning.unsafe_products && analysis.cleaning.unsafe_products.length > 0 && (
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                      <div className="mb-1 flex items-center gap-1.5 text-destructive">
+                        <Ban className="h-3.5 w-3.5" />
+                        <h4 className="text-xs font-semibold uppercase tracking-wider">Avoid</h4>
+                      </div>
+                      <ul className="list-disc space-y-0.5 pl-4 text-xs text-foreground">
+                        {analysis.cleaning.unsafe_products.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {analysis.cleaning.cleaning_steps && analysis.cleaning.cleaning_steps.length > 0 && (
+                  <div>
+                    <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Cleaning steps
+                    </h4>
+                    <ol className="list-decimal space-y-1 pl-4 text-sm">
+                      {analysis.cleaning.cleaning_steps.map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : null}
     </AppShell>
   );
 }
