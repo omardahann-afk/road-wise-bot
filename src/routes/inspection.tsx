@@ -56,6 +56,7 @@ import { interpretDetections, surfaceIssueLabel, type InterpretedDetection } fro
 import { DetectionChips } from "@/components/diagnostics/detection-chips";
 import { computeDecisionTrust } from "@/lib/decision-trust";
 import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
+import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
@@ -1281,6 +1282,36 @@ function ReportScreen({
           </CardContent>
         </Card>
       )}
+
+      {/* Real-world insights for the top concern */}
+      {(() => {
+        const top =
+          ai?.top_concerns?.[0] ??
+          (findings.length > 0
+            ? { issue: findings[0].issue, severity: findings[0].severity, impact: "" }
+            : null);
+        if (!top) return null;
+        const sev =
+          (["info", "low", "medium", "high", "critical"].includes(top.severity)
+            ? top.severity
+            : "medium") as "info" | "low" | "medium" | "high" | "critical";
+        return (
+          <RealWorldInsights
+            context={{
+              topic: "inspection",
+              issue: top.issue,
+              component: null,
+              severity: sev,
+              vehicle: {
+                year: vehicle.year ? Number(vehicle.year) : null,
+                make: vehicle.make,
+                model: vehicle.model,
+                mileage_km: vehicle.mileage ? Number(vehicle.mileage) : null,
+              },
+            }}
+          />
+        );
+      })()}
 
       <div className="flex gap-2 pb-4">
         <Button variant="outline" onClick={onRestart} className="flex-1">
