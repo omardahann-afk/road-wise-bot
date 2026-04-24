@@ -241,9 +241,31 @@ function CleaningPage() {
             ) : null}
           </div>
 
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5">
+              <span className="font-semibold text-foreground">Material:</span>{" "}
+              <span className="text-muted-foreground">{guide.material}</span>
+            </span>
+            <span
+              className={`rounded-full border px-2 py-0.5 font-semibold uppercase tracking-wider ${
+                guide.riskLevel === "high"
+                  ? "border-destructive/40 bg-destructive/10 text-destructive"
+                  : guide.riskLevel === "medium"
+                  ? "border-warning/40 bg-warning/10 text-warning"
+                  : "border-success/40 bg-success/10 text-success"
+              }`}
+            >
+              {guide.riskLevel} risk
+            </span>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <GuideBlock title="Tools" items={guide.tools} />
-            <GuideBlock title="Products" items={guide.products} />
+            <GuideBlock title="Safe products" items={guide.safeProducts} tone="success" />
+          </div>
+
+          <div className="mt-4">
+            <GuideBlock title="Avoid these" items={guide.unsafeProducts} tone="destructive" />
           </div>
 
           <Card className="mt-4 border-warning/30 bg-warning/10">
