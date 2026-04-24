@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "@tanstack/react-router";
 import {
   Check,
   ChevronLeft,
@@ -11,6 +12,9 @@ import {
   ShieldAlert,
   Wrench,
   Sparkles,
+  PartyPopper,
+  Camera,
+  Save,
 } from "lucide-react";
 import {
   type EngineStep,
@@ -155,6 +159,10 @@ export function StepEngine({
             </div>
           </div>
           <Progress value={pct} className="h-1.5" />
+          {/* Progress motivation line — keeps users moving, not just reading */}
+          <p className="mt-2 text-[11px] font-medium text-primary/90">
+            {motivationLine(progress.completed.length, total)}
+          </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {steps.map((_, i) => {
               const isDone = progress.completed.includes(i);
