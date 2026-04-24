@@ -333,23 +333,24 @@ export function CameraAnalysisResult({
           </div>
         )}
       </CardContent>
-
-      {/* Real-world insights — pluggable knowledge layer (AI common patterns today) */}
-      <RealWorldInsights
-        enabled={!lowConfidence && !!primaryComponent}
-        context={{
-          topic,
-          issue:
-            primaryComponent?.likely_issue ||
-            primaryComponent?.name ||
-            result.summary ||
-            "",
-          component: primaryComponent?.name ?? null,
-          severity: severityForPricing,
-          vehicle: vehicle ?? null,
-        }}
-      />
     </Card>
+
+    {/* Real-world insights — pluggable knowledge layer (AI common patterns today) */}
+    <RealWorldInsights
+      enabled={!lowConfidence && !!primaryComponent}
+      context={{
+        topic,
+        issue:
+          primaryComponent?.likely_issue ||
+          primaryComponent?.name ||
+          result.summary ||
+          "",
+        component: primaryComponent?.name ?? null,
+        severity: severityForPricing,
+        vehicle: vehicle ?? null,
+      }}
+    />
+    </>
   );
 }
 
