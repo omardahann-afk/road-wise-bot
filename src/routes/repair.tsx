@@ -265,6 +265,17 @@ function RepairWorkflowDetail(props: {
           icon={Icon}
         />
 
+        {/* Confidence line — sets expectations before diving in */}
+        <div className={`rounded-xl border-2 px-3 py-2.5 text-[12px] font-medium leading-snug ${
+          (ai?.difficulty ?? meta.difficulty) === "beginner"
+            ? "border-success/40 bg-success/5 text-success"
+            : (ai?.difficulty ?? meta.difficulty) === "intermediate"
+              ? "border-warning/40 bg-warning/5 text-warning"
+              : "border-destructive/40 bg-destructive/5 text-destructive"
+        }`}>
+          {confidenceLine(ai?.difficulty ?? meta.difficulty, !!ai?.professional_recommended)}
+        </div>
+
         {/* Inspection context badge (when deep-linked from inspection) */}
         {props.issue && (props.severity || props.location) && (
           <Card>
@@ -379,6 +390,26 @@ function RepairWorkflowDetail(props: {
       </div>
     </AppShell>
   );
+}
+
+/**
+ * Short confidence line shown above the safety section so users know what
+ * they're walking into before they commit to the repair.
+ */
+function confidenceLine(
+  difficulty: "beginner" | "intermediate" | "advanced",
+  proRecommended: boolean,
+): string {
+  if (proRecommended) {
+    return "This one's better handled by a mechanic — review the steps first, then decide.";
+  }
+  if (difficulty === "beginner") {
+    return "This is a common repair and can be done with basic tools — you've got this.";
+  }
+  if (difficulty === "intermediate") {
+    return "This requires some experience and the right tools — proceed carefully and read each step before acting.";
+  }
+  return "Advanced repair — only attempt if you've done similar work before. Otherwise, take it to a shop.";
 }
 
 import { Lock, LogIn, Eye } from "lucide-react";

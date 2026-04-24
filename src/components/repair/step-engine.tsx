@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "@tanstack/react-router";
 import {
   Check,
   ChevronLeft,
@@ -11,6 +12,9 @@ import {
   ShieldAlert,
   Wrench,
   Sparkles,
+  PartyPopper,
+  Camera,
+  Save,
 } from "lucide-react";
 import {
   type EngineStep,
@@ -155,6 +159,10 @@ export function StepEngine({
             </div>
           </div>
           <Progress value={pct} className="h-1.5" />
+          {/* Progress motivation line — keeps users moving, not just reading */}
+          <p className="mt-2 text-[11px] font-medium text-primary/90">
+            {motivationLine(progress.completed.length, total)}
+          </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {steps.map((_, i) => {
               const isDone = progress.completed.includes(i);
@@ -265,18 +273,50 @@ export function StepEngine({
       </div>
 
       {allDone && (
-        <Card className="border-success/40 bg-success/10">
-          <CardContent className="p-4 text-sm text-success">
-            <div className="flex items-center gap-2 font-semibold">
-              <Check className="h-4 w-4" /> All steps complete
+        <Card className="border-success/40 bg-gradient-to-br from-success/15 via-card to-card shadow-glow">
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-success/20 text-success">
+                <PartyPopper className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-success">Nice work — this issue should now be resolved</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Verify the repair matches the original symptom and take a photo for your records.
+                </p>
+              </div>
             </div>
-            <p className="mt-1 text-xs opacity-90">
-              Verify the repair matches the original issue. Save evidence photos
-              for your records.
-            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button asChild size="sm" className="w-full">
+                <Link to="/diagnose">
+                  <Camera className="h-4 w-4" /> Scan again
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="w-full">
+                <Link to="/history">
+                  <Save className="h-4 w-4" /> Save report
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
     </div>
   );
+}
+
+/**
+ * Friendly progress motivation line that updates as the user advances.
+ * Keeps users moving — small wins matter on a long repair.
+ */
+function motivationLine(done: number, total: number): string {
+  if (total === 0) return "Let's get started.";
+  if (done === 0) return "Let's walk through it — one step at a time.";
+  if (done === total) return "All steps complete — nice work.";
+  const pct = done / total;
+  if (done === total - 1) return "Final step — almost there.";
+  if (pct >= 0.66) return "You're in the home stretch — keep going.";
+  if (pct >= 0.5) return "You're halfway done — great pace.";
+  if (pct >= 0.33) return "Solid progress — you've got this.";
+  return "Good start — keep going.";
 }

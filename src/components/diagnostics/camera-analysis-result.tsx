@@ -272,15 +272,27 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* ACTION HUB */}
+        {/* ACTION HUB — decision guidance + urgency clarity + prominent CTA */}
         {actions && (actions.showRepair || actions.showCleaning || actions.onSave) && !lowConfidence && (
-          <div className="space-y-2 pt-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              What next?
-            </h4>
-            <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="space-y-3 pt-2">
+            {/* Decision guidance line */}
+            {primaryComponent && (
+              <DecisionGuidance
+                urgency={urgency}
+                safeToDrive={safeToDrive}
+                showRepair={!!actions.showRepair}
+                showCleaning={!!actions.showCleaning}
+              />
+            )}
+
+            <div>
+              <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                What do you want to do next?
+              </h4>
+
+              {/* Primary action — Fix it gets full visual priority */}
               {actions.showRepair && (
-                <Button asChild size="sm" className="flex-1">
+                <Button asChild size="lg" className="h-12 w-full text-base shadow-glow">
                   <Link
                     to="/repair"
                     search={
@@ -293,12 +305,12 @@ export function CameraAnalysisResult({
                         : {}
                     }
                   >
-                    <Wrench className="h-4 w-4" /> Fix it
+                    <Wrench className="h-5 w-5" /> Start the fix
                   </Link>
                 </Button>
               )}
-              {actions.showCleaning && (
-                <Button asChild size="sm" variant="outline" className="flex-1">
+              {actions.showCleaning && !actions.showRepair && (
+                <Button asChild size="lg" className="h-12 w-full text-base shadow-glow">
                   <Link
                     to="/cleaning"
                     search={{
@@ -306,29 +318,46 @@ export function CameraAnalysisResult({
                       issue: primaryComponent?.likely_issue ?? undefined,
                     }}
                   >
-                    <Sparkles className="h-4 w-4" /> Cleaning tips
+                    <Sparkles className="h-5 w-5" /> Start cleaning now
                   </Link>
                 </Button>
               )}
-              {actions.onSave && (
-                <Button
-                  size="sm"
-                  variant={actions.saved ? "outline" : "secondary"}
-                  onClick={actions.onSave}
-                  disabled={actions.saving || actions.saved}
-                  className="flex-1"
-                >
-                  {actions.saved ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" /> Saved
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" /> Save report
-                    </>
-                  )}
-              </Button>
-              )}
+
+              {/* Secondary actions row */}
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                {actions.showCleaning && actions.showRepair && (
+                  <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link
+                      to="/cleaning"
+                      search={{
+                        area: primaryComponent?.name,
+                        issue: primaryComponent?.likely_issue ?? undefined,
+                      }}
+                    >
+                      <Sparkles className="h-4 w-4" /> Cleaning tips
+                    </Link>
+                  </Button>
+                )}
+                {actions.onSave && (
+                  <Button
+                    size="sm"
+                    variant={actions.saved ? "outline" : "secondary"}
+                    onClick={actions.onSave}
+                    disabled={actions.saving || actions.saved}
+                    className="flex-1"
+                  >
+                    {actions.saved ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" /> Saved
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" /> Save report
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -420,4 +449,55 @@ function mapToWorkflow(name?: string, issue?: string | null): RepairWorkflow | n
   if (/warning light|check engine|abs|airbag/.test(text)) return "warning_light_diagnostic";
   if (/seat|trim|upholstery|dashboard plastic/.test(text)) return "interior_repair";
   return "general_repair";
+}
+
+/**
+ * Short decision-guidance line shown above the action hub.
+ * Combines DIY confidence + urgency so users know how to act, not just what's wrong.
+ */
+function DecisionGuidance({
+  urgency,
+  safeToDrive,
+  showRepair,
+  showCleaning,
+}: {
+  urgency: "low" | "medium" | "high" | "critical";
+  safeToDrive: boolean;
+  showRepair: boolean;
+  showCleaning: boolean;
+}) {
+  // DIY recommendation: cleaning is always DIY-friendly; repair depends on urgency.
+  const diyFriendly =
+    showCleaning && !showRepair
+      ? true
+      : urgency === "low" || urgency === "medium";
+  const diyLine = diyFriendly
+    ? "If you're comfortable with basic tools, you can handle this yourself."
+    : "This is better handled by a mechanic — DIY is risky here.";
+
+  // Urgency line: clear, calm, action-oriented.
+  const urgencyLine =
+    urgency === "critical"
+      ? "Address this immediately — do not drive until it's resolved."
+      : urgency === "high"
+        ? "Address this soon to avoid further damage or higher repair costs."
+        : urgency === "medium"
+          ? safeToDrive
+            ? "You're safe to drive for now, but plan to address this within a few weeks."
+            : "Get this looked at before driving further."
+          : "Safe for now. Monitor over the next few weeks and address at your next service.";
+
+  const tone =
+    urgency === "critical" || urgency === "high"
+      ? "border-destructive/40 bg-destructive/5 text-destructive"
+      : urgency === "medium"
+        ? "border-warning/40 bg-warning/5 text-warning"
+        : "border-success/40 bg-success/5 text-success";
+
+  return (
+    <div className={`rounded-xl border-2 px-3 py-2.5 ${tone}`}>
+      <div className="text-[13px] font-semibold leading-snug">{urgencyLine}</div>
+      <div className="mt-0.5 text-[11px] opacity-90">{diyLine}</div>
+    </div>
+  );
 }
