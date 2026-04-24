@@ -272,15 +272,27 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* ACTION HUB */}
+        {/* ACTION HUB — decision guidance + urgency clarity + prominent CTA */}
         {actions && (actions.showRepair || actions.showCleaning || actions.onSave) && !lowConfidence && (
-          <div className="space-y-2 pt-2">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              What next?
-            </h4>
-            <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="space-y-3 pt-2">
+            {/* Decision guidance line */}
+            {primaryComponent && (
+              <DecisionGuidance
+                urgency={urgency}
+                safeToDrive={safeToDrive}
+                showRepair={!!actions.showRepair}
+                showCleaning={!!actions.showCleaning}
+              />
+            )}
+
+            <div>
+              <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                What do you want to do next?
+              </h4>
+
+              {/* Primary action — Fix it gets full visual priority */}
               {actions.showRepair && (
-                <Button asChild size="sm" className="flex-1">
+                <Button asChild size="lg" className="h-12 w-full text-base shadow-glow">
                   <Link
                     to="/repair"
                     search={
@@ -293,12 +305,12 @@ export function CameraAnalysisResult({
                         : {}
                     }
                   >
-                    <Wrench className="h-4 w-4" /> Fix it
+                    <Wrench className="h-5 w-5" /> Start the fix
                   </Link>
                 </Button>
               )}
-              {actions.showCleaning && (
-                <Button asChild size="sm" variant="outline" className="flex-1">
+              {actions.showCleaning && !actions.showRepair && (
+                <Button asChild size="lg" className="h-12 w-full text-base shadow-glow">
                   <Link
                     to="/cleaning"
                     search={{
@@ -306,29 +318,46 @@ export function CameraAnalysisResult({
                       issue: primaryComponent?.likely_issue ?? undefined,
                     }}
                   >
-                    <Sparkles className="h-4 w-4" /> Cleaning tips
+                    <Sparkles className="h-5 w-5" /> Start cleaning now
                   </Link>
                 </Button>
               )}
-              {actions.onSave && (
-                <Button
-                  size="sm"
-                  variant={actions.saved ? "outline" : "secondary"}
-                  onClick={actions.onSave}
-                  disabled={actions.saving || actions.saved}
-                  className="flex-1"
-                >
-                  {actions.saved ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" /> Saved
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" /> Save report
-                    </>
-                  )}
-              </Button>
-              )}
+
+              {/* Secondary actions row */}
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                {actions.showCleaning && actions.showRepair && (
+                  <Button asChild size="sm" variant="outline" className="flex-1">
+                    <Link
+                      to="/cleaning"
+                      search={{
+                        area: primaryComponent?.name,
+                        issue: primaryComponent?.likely_issue ?? undefined,
+                      }}
+                    >
+                      <Sparkles className="h-4 w-4" /> Cleaning tips
+                    </Link>
+                  </Button>
+                )}
+                {actions.onSave && (
+                  <Button
+                    size="sm"
+                    variant={actions.saved ? "outline" : "secondary"}
+                    onClick={actions.onSave}
+                    disabled={actions.saving || actions.saved}
+                    className="flex-1"
+                  >
+                    {actions.saved ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" /> Saved
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" /> Save report
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
