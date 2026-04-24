@@ -98,6 +98,7 @@ export function CameraAnalysisResult({
   const safeToDrive = isSafeToDrive(urgency, result.warnings ?? []);
 
   return (
+    <>
     <Card className="overflow-hidden border-primary/30">
       <CardContent className="space-y-4 p-4">
         {/* PREMIUM HEADER: detected part as title, confidence + severity badges */}
