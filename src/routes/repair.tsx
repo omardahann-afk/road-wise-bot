@@ -28,7 +28,14 @@ import type { RepairWorkflow } from "@/lib/valuation";
 import { estimateRepairCost, type IssueType, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
 import { StepEngine } from "@/components/repair/step-engine";
-import { normalizeAiSteps, FALLBACK_STEPS } from "@/lib/repair-engine";
+import { normalizeAiSteps, FALLBACK_STEPS, GUIDE_META } from "@/lib/repair-engine";
+import {
+  RepairGuideHeader,
+  SafetySection,
+  ToolsSection,
+  WatchOutSection,
+  VideoGuideSection,
+} from "@/components/repair/repair-guide-sections";
 
 // Maps repair workflow → pricing IssueType (deterministic).
 const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
