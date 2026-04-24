@@ -207,8 +207,8 @@ function ValuationPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="mileage" className="text-[11px]">Mileage (mi)</Label>
-              <Input id="mileage" inputMode="numeric" placeholder="78,000" value={form.mileage}
+              <Label htmlFor="mileage" className="text-[11px]">Mileage (km)</Label>
+              <Input id="mileage" inputMode="numeric" placeholder="125,000" value={form.mileage}
                 onChange={(e) => setForm({ ...form, mileage: e.target.value })} />
             </div>
             <div>

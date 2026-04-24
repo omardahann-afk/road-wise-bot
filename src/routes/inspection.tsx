@@ -422,8 +422,8 @@ function SetupScreen({
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="mileage" className="text-[11px]">Mileage</Label>
-                <Input id="mileage" inputMode="numeric" placeholder="78,000" value={vehicle.mileage}
+                <Label htmlFor="mileage" className="text-[11px]">Mileage (km)</Label>
+                <Input id="mileage" inputMode="numeric" placeholder="125,000" value={vehicle.mileage}
                   onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })} />
               </div>
               <div>
