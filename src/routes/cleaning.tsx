@@ -91,7 +91,11 @@ function CleaningPage() {
         detections: payload.detections,
         area: guide.title,
         goal: "cleaning",
-        notes: `Provide cleaning guidance for the ${guide.title.toLowerCase()} area. Prefer honest low-confidence handling and practical cleaning next steps.`,
+        notes:
+          `User wants to clean the ${guide.title.toLowerCase()} of their car. ` +
+          `Identify the actual material visible (leather, fabric, plastic, painted clear-coat, alloy, glass, rubber, etc.). ` +
+          `Return a "cleaning" object with: material, risk_level (low|medium|high), safe_products (array), unsafe_products (array of items to AVOID), and cleaning_steps (ordered array). ` +
+          `Be honest if confidence is low — ask for a clearer photo instead of guessing.`,
       });
       setAnalysis(result);
     } catch (error) {
@@ -112,7 +116,10 @@ function CleaningPage() {
         detections: payload.detections,
         area: guide.title,
         goal: "cleaning",
-        notes: `Provide cleaning guidance for the ${guide.title.toLowerCase()} area. If the photo is unclear, ask for a cleaner recapture instead of guessing.`,
+        notes:
+          `User uploaded a photo of the ${guide.title.toLowerCase()} for cleaning guidance. ` +
+          `Identify the actual material visible. Return a "cleaning" object with material, risk_level, safe_products, unsafe_products, and cleaning_steps. ` +
+          `If the photo is unclear, ask for a cleaner recapture instead of guessing.`,
       });
       setAnalysis(result);
     } catch (error) {
