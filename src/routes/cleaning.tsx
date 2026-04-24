@@ -306,10 +306,30 @@ function CleaningPage() {
   );
 }
 
-function GuideBlock({ title, items }: { title: string; items: string[] }) {
+function GuideBlock({
+  title,
+  items,
+  tone = "default",
+}: {
+  title: string;
+  items: string[];
+  tone?: "default" | "success" | "destructive";
+}) {
+  const toneCls =
+    tone === "success"
+      ? "border-success/30 bg-success/5"
+      : tone === "destructive"
+      ? "border-destructive/30 bg-destructive/5"
+      : "border-border bg-muted/30";
+  const headingCls =
+    tone === "success"
+      ? "text-success"
+      : tone === "destructive"
+      ? "text-destructive"
+      : "text-foreground";
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4">
-      <h3 className="text-sm font-semibold">{title}</h3>
+    <div className={`rounded-xl border p-4 ${toneCls}`}>
+      <h3 className={`text-sm font-semibold ${headingCls}`}>{title}</h3>
       <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-muted-foreground">
         {items.map((item) => (
           <li key={item}>{item}</li>
