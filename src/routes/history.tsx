@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { severityClass } from "@/lib/severity";
 import { formatCAD } from "@/lib/pricing";
+import { SignInEmptyState } from "@/components/layout/sign-in-empty-state";
 
 export const Route = createFileRoute("/history")({
   component: HistoryPage,
@@ -118,7 +119,7 @@ function HistoryPage() {
         </p>
       </div>
 
-      {!user && <p className="text-sm text-muted-foreground">Sign in to view your history.</p>}
+      {!user && <SignInEmptyState context="diagnostics, vehicles, inspections, and reports" />}
       {user && loading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
       {user && !loading && inspections.length > 0 && (
@@ -270,7 +271,7 @@ function InspectionCard({ row }: { row: InspectionRow }) {
                   {v.year ?? "?"} {v.make ?? ""} {v.model ?? ""}
                 </h3>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {v.mileage ? `${v.mileage.toLocaleString()} mi` : ""}
+                  {v.mileage ? `${v.mileage.toLocaleString()} km` : ""}
                   {row.asking_price ? ` · Asking ${formatCAD(row.asking_price)}` : ""}
                 </p>
               </div>

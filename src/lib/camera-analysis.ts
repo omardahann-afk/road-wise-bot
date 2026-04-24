@@ -1,5 +1,18 @@
 import { callAi } from "@/lib/ai";
 
+export interface CleaningAdvice {
+  /** Material(s) detected (e.g. "leather seat", "alloy wheel"). */
+  material?: string | null;
+  /** Risk if cleaned incorrectly. */
+  risk_level?: "low" | "medium" | "high" | null;
+  /** Products that ARE safe to use. */
+  safe_products?: string[];
+  /** Products / household items to AVOID on this surface. */
+  unsafe_products?: string[];
+  /** Optional ordered cleaning steps specific to this photo. */
+  cleaning_steps?: string[];
+}
+
 export interface AiCameraResult {
   summary: string;
   overall_confidence?: "low" | "medium" | "high";
@@ -18,6 +31,8 @@ export interface AiCameraResult {
   next_action: string;
   recapture_tip?: string | null;
   follow_up_questions: string[];
+  /** Optional cleaning-specific advice block — only filled when goal=cleaning. */
+  cleaning?: CleaningAdvice | null;
 }
 
 export async function analyzeCameraPhoto(input: {

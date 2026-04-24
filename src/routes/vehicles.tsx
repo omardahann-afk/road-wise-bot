@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Car, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { SignInEmptyState } from "@/components/layout/sign-in-empty-state";
 
 export const Route = createFileRoute("/vehicles")({
   component: VehiclesPage,
@@ -87,7 +88,7 @@ function VehiclesPage() {
         )}
       </div>
 
-      {!user && <p className="text-sm text-muted-foreground">Sign in to save vehicles.</p>}
+      {!user && <SignInEmptyState context="vehicles, diagnostics, inspections, and reports" />}
 
       {adding && user && (
         <Card className="mb-4">
@@ -158,7 +159,7 @@ function VehiclesPage() {
               </p>
               <p className="text-xs text-muted-foreground">
                 {[v.year, v.make, v.model].filter(Boolean).join(" ")}
-                {v.mileage ? ` · ${v.mileage.toLocaleString()} mi` : ""}
+                {v.mileage ? ` · ${v.mileage.toLocaleString()} km` : ""}
               </p>
             </div>
           </li>

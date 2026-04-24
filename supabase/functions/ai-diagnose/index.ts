@@ -9,11 +9,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM_PROMPT = `You are AutoSage AI, an expert automotive diagnostic assistant.
+const SYSTEM_PROMPT = `You are AutoSage AI, an expert automotive diagnostic assistant for Canadian drivers.
 You ALWAYS respond with valid JSON ONLY — never with prose, markdown fences, or commentary.
 You combine the structured datasets the user provides with your knowledge to produce safe, accurate, actionable diagnoses.
+HONESTY RULE: If the input (especially a photo) is unclear, ambiguous, glare-affected, blurry, or you are not at least medium confidence about what you see, you MUST set overall_confidence to "low" and ask the user to retake / provide more info instead of guessing. Do NOT invent components, codes, or part numbers.
 Never hallucinate part numbers or torque specs you are uncertain about; mark uncertain items with "verify": true.
 Always include safety warnings for tasks involving fuel, electrical, suspension, brakes, or airbags.
+ALL pricing in this app is Canadian Dollars (CAD), reflecting typical Canadian independent shop labor + parts. Never return USD.
 Recommend a professional when severity is high or when work requires specialized tools.`;
 
 interface Body {
@@ -49,7 +51,7 @@ Return JSON with shape:
  "likely_causes": string[],
  "diy_steps": [{ "step": string, "detail": string, "warning"?: string }],
  "tools_needed": string[],
- "estimated_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_cost": { "low": number, "high": number, "currency": "CAD" },
  "professional_recommended": boolean,
  "safety": string[]
 }
@@ -64,14 +66,17 @@ Return JSON with shape:
  "next_steps": [{ "step": string, "detail": string }],
  "questions_to_narrow": string[],
  "tools_needed": string[],
- "estimated_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_cost": { "low": number, "high": number, "currency": "CAD" },
  "professional_recommended": boolean,
  "safety": string[]
 }
 Context: ${JSON.stringify(ctx)}`;
     case "camera":
       return `Task: A user pointed their phone camera at part of their car. They captured a still photo (provided to you as an image). The browser also reported these generic objects from a small on-device vision model (low quality, treat as hints only): ${JSON.stringify((payload as { detected_objects?: unknown }).detected_objects ?? [])}.
-Look at the IMAGE carefully. Identify the actual automotive component(s) visible. If the photo is too dark, blurry, or does not clearly show a car part, SAY SO honestly via overall_confidence:"low" and ask the user to recapture — do not invent components.
+Look at the IMAGE carefully. Identify the actual automotive component(s) visible. If the photo is too dark, blurry, has heavy glare, or does not clearly show a car part, SET overall_confidence:"low" and ask the user to recapture — do NOT invent components, do NOT pad likely_components with guesses.
+Goal hint from app: "${(payload as { goal?: string }).goal ?? "diagnose"}". Area hint: "${(payload as { area?: string }).area ?? "n/a"}".
+If goal === "cleaning", ALSO populate the optional "cleaning" object describing the material visible, risk_level, safe products, products to avoid, and ordered cleaning_steps. If goal !== "cleaning", set "cleaning" to null.
+Pricing in any cost mention must be CAD (Canadian shop pricing).
 Return JSON ONLY with shape:
 {
  "summary": string,
@@ -81,14 +86,15 @@ Return JSON ONLY with shape:
  "warnings": string[],
  "next_action": string,
  "recapture_tip": string|null,
- "follow_up_questions": string[]
+ "follow_up_questions": string[],
+ "cleaning": null | { "material": string, "risk_level": "low"|"medium"|"high", "safe_products": string[], "unsafe_products": string[], "cleaning_steps": string[] }
 }
 Context: ${JSON.stringify(ctx)}`;
     case "valuation":
       return `Task: Estimate fair market value and produce negotiation advice.
 Return JSON with shape:
 {
- "fair_value": { "low": number, "avg": number, "high": number, "currency": "USD" },
+ "fair_value": { "low": number, "avg": number, "high": number, "currency": "CAD" },
  "decision": "BUY"|"NEGOTIATE"|"AVOID",
  "negotiation_advice": string,
  "key_points": string[],
@@ -105,7 +111,7 @@ Return JSON with shape:
  "tools": string[],
  "parts": string[],
  "warnings": string[],
- "estimated_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_cost": { "low": number, "high": number, "currency": "CAD" },
  "professional_recommended": boolean
 }
 Context: ${JSON.stringify(ctx)}`;
@@ -134,7 +140,7 @@ Return JSON ONLY with shape:
  "top_concerns": [{ "issue": string, "severity": "info"|"low"|"medium"|"high"|"critical", "impact": string }],
  "negotiation_advice": string,
  "talking_points": string[],
- "estimated_repair_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_repair_cost": { "low": number, "high": number, "currency": "CAD" },
  "decision": "BUY"|"NEGOTIATE"|"AVOID",
  "decision_reason": string
 }
