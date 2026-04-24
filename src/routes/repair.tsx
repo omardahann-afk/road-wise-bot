@@ -392,6 +392,26 @@ function RepairWorkflowDetail(props: {
   );
 }
 
+/**
+ * Short confidence line shown above the safety section so users know what
+ * they're walking into before they commit to the repair.
+ */
+function confidenceLine(
+  difficulty: "beginner" | "intermediate" | "advanced",
+  proRecommended: boolean,
+): string {
+  if (proRecommended) {
+    return "This one's better handled by a mechanic — review the steps first, then decide.";
+  }
+  if (difficulty === "beginner") {
+    return "This is a common repair and can be done with basic tools — you've got this.";
+  }
+  if (difficulty === "intermediate") {
+    return "This requires some experience and the right tools — proceed carefully and read each step before acting.";
+  }
+  return "Advanced repair — only attempt if you've done similar work before. Otherwise, take it to a shop.";
+}
+
 import { Lock, LogIn, Eye } from "lucide-react";
 import type { EngineStep } from "@/lib/repair-engine";
 
