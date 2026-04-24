@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 import { AutoSageLogo } from "@/components/brand/logo";
 
@@ -13,10 +13,11 @@ export function AppHeader({
   showBack?: boolean;
 }) {
   const router = useRouter();
+  // Defer the back button to the client so SSR/CSR markup matches.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const canGoBack =
-    showBack &&
-    typeof window !== "undefined" &&
-    router.state.location.pathname !== "/";
+    mounted && showBack && router.state.location.pathname !== "/";
 
   function handleBack() {
     if (typeof window === "undefined") return;
@@ -26,6 +27,7 @@ export function AppHeader({
       router.navigate({ to: "/" });
     }
   }
+
 
   return (
     <header className="sticky top-0 z-30 border-b border-border glass safe-top">

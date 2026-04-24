@@ -110,16 +110,51 @@ Return JSON with shape:
 Context: ${JSON.stringify(ctx)}`;
     case "repair_steps":
       return `Task: Generate practical, mechanic-grade repair steps for the given issue. Write like an experienced shop tech walking a friend through it — confident, specific, no filler.
-VOICE RULES (apply to every "step" and "detail"):
-- Use confident phrasing: "You'll likely need to…", "This part is usually located…", "In most cases…", "Expect the bolts to be tight…".
-- Mention real-world friction where it matters: stuck or seized bolts (especially over 100k km or in road-salt regions), tight clearance, rust, awkward angles, things that often break on first removal (plastic clips, vacuum lines, brake-line fittings).
-- Drop a practical, human tip at least every 2–3 steps: "Take your time here", "This step can be tricky — go slow", "Spray penetrating oil and let it sit 10 min if bolts are stuck", "Snap a phone photo before unplugging connectors so reassembly is easy", "Label hoses with masking tape", "Crack the bleeder before you lift the car".
-- If vehicle make/model/year/mileage is provided, weave in 1–2 model-specific or mileage-specific notes where genuinely common (e.g. "On higher-mileage <make> <model>s, the <component> bracket is often seized — budget extra time", or "<make> uses a 12mm reverse-Torx here, not a standard hex"). Don't force it if you don't truly know the platform — keep it generic instead.
-- Each "detail" must be specific enough that a person in their driveway knows exactly what to do next. No "be careful" / "use proper tools" filler.
-- Where torque or fluid capacity is vehicle-dependent, say "check your vehicle service manual for the exact torque spec" — never invent numbers.
-- Include explicit "stop and see a mechanic" triggers in the warnings array when the work touches brakes, steering, airbags, fuel, or suspension.
-- Open the "title" with a warm, confident framing where natural ("Good call tackling this yourself" / "This is a common repair — you've got this"). Don't be cheesy; one short line max.
-- Tone: trustworthy, calm, mechanic-honest. Never robotic.
+
+STEP STRUCTURE (MANDATORY for every "detail" field):
+Each "detail" must follow this 4-part flow in 2–4 short sentences:
+  1. ACTION — what to physically do ("Loosen the two 13mm bolts holding the caliper bracket…")
+  2. CONTEXT — where the part lives and how to access it ("It's behind the wheel, mounted to the steering knuckle, easier to reach with the wheel turned outward.")
+  3. FRICTION — what usually goes wrong ("These bolts are often seized on cars past 100k km, especially in salt regions.")
+  4. TIP (optional but encouraged every 2–3 steps) — a real garage trick ("Hit them with penetrating oil 10 min before, and use a 6-point socket so you don't round them off.")
+
+Each "step" (the title) is a short imperative phrase ("Remove the caliper", "Drain the coolant"). The narrative goes in "detail".
+
+LOCATION RULES:
+- Always describe where the part is (front/back/under/inside, driver/passenger side, near which landmark).
+- Reference real landmarks the user can see: "next to the alternator", "below the intake manifold", "under the rear seat cushion".
+
+FRICTION RULES (call these out where they actually apply):
+- Stuck/seized bolts (especially over 100k km or in road-salt regions)
+- Rust on fasteners and brackets
+- Tight clearance / awkward angles / requires the wheel turned a certain way
+- Plastic clips that break on first removal
+- Brake-line and vacuum-line fittings that round off easily
+
+PRACTICAL TIPS (drop one in every 2–3 steps where natural):
+- "Spray penetrating oil and let it sit 10 min before turning rusty bolts"
+- "Snap a phone photo before unplugging connectors so reassembly is easy"
+- "Label hoses with masking tape and a marker"
+- "Lay bolts out on cardboard in the order you removed them"
+- "Crack the bleeder before you lift the car so it's not seized when you need it"
+
+CRITICAL FINAL STEPS (include where applicable as the last step or two):
+- Brakes: "Pump the pedal 5–10 times before driving — the first press will go to the floor until pads seat against the rotors."
+- Wheels: "Re-torque lug nuts after 80–100 km of driving."
+- Cooling: "Burp the system — run with the cap off until the thermostat opens, top up, then cap and recheck overnight."
+- Electrical: "Reconnect the battery last, then verify all connectors are seated and dash warning lights clear after a short drive."
+- Anything reassembled: "Double-check every connector and hose you touched before lowering the car."
+
+VOICE RULES:
+- Confident phrasing: "You'll likely need to…", "This part is usually located…", "In most cases…", "Expect the bolts to be tight…", "This step can be tricky — go slow."
+- If vehicle make/model/year/mileage is provided, weave in 1–2 model-specific or mileage-specific notes where genuinely common (e.g. "On higher-mileage <make> <model>s, the <component> bracket is often seized — budget extra time", or "<make> uses a 12mm reverse-Torx here, not standard hex"). If you don't truly know the platform, stay generic.
+- Where torque/fluid capacity is vehicle-dependent, say "check your vehicle service manual for the exact torque spec" — never invent numbers.
+- Open the "title" with one short warm framing where natural ("Good call tackling this yourself" / "This is a common repair — you've got this"). Don't be cheesy; one short line max.
+
+SAFETY RULES (NON-NEGOTIABLE):
+- Always include "stop and see a mechanic" triggers in the warnings array when the work touches brakes, steering, airbags, fuel, suspension, or airbag/SRS wiring.
+- Never give an instruction that could let air into a brake line, fuel line, or A/C system without explicit follow-up to bleed/refill/recheck.
+- If the repair requires lifting the vehicle, the first warning must be about jack stands and chocks.
 Return JSON with shape:
 {
  "title": string,
