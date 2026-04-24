@@ -38,6 +38,7 @@ function Obd2Lookup() {
   const [aiResult, setAiResult] = useState<AiObd2Result | null>(null);
   const [busy, setBusy] = useState(false);
   const { user } = useAuth();
+  const vehicle = useActiveVehicleProfile();
 
   async function lookup(rawCode?: string, e?: React.FormEvent) {
     e?.preventDefault();
@@ -236,6 +237,19 @@ function Obd2Lookup() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Real-world insights — pluggable knowledge layer */}
+      {grounded && (
+        <RealWorldInsights
+          context={{
+            topic: "obd2",
+            issue: `${grounded.entry.code} — ${grounded.entry.title}`,
+            component: grounded.entry.system,
+            severity: grounded.entry.severity,
+            vehicle: vehicle ?? null,
+          }}
+        />
       )}
     </AppShell>
   );
