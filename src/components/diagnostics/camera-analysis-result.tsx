@@ -43,11 +43,15 @@ export function CameraAnalysisResult({
   result,
   label = "AI insight",
   actions,
+  topic = "diagnose",
 }: {
   result: AiCameraResult;
   label?: string;
   actions?: ActionConfig;
+  /** Knowledge-layer topic — controls insights prompt focus. */
+  topic?: "diagnose" | "cleaning" | "inspection";
 }) {
+  const vehicle = useActiveVehicleProfile();
   // Derive headline urgency from confidence + presence of warnings.
   const urgency = useMemo<"low" | "medium" | "high" | "critical">(() => {
     const warningCount = result.warnings?.length ?? 0;
@@ -322,12 +326,28 @@ export function CameraAnalysisResult({
                       <Save className="h-4 w-4" /> Save report
                     </>
                   )}
-                </Button>
+              </Button>
               )}
             </div>
           </div>
         )}
       </CardContent>
+
+      {/* Real-world insights — pluggable knowledge layer (AI common patterns today) */}
+      <RealWorldInsights
+        enabled={!lowConfidence && !!primaryComponent}
+        context={{
+          topic,
+          issue:
+            primaryComponent?.likely_issue ||
+            primaryComponent?.name ||
+            result.summary ||
+            "",
+          component: primaryComponent?.name ?? null,
+          severity: severityForPricing,
+          vehicle: vehicle ?? null,
+        }}
+      />
     </Card>
   );
 }
