@@ -94,7 +94,7 @@ Context: ${JSON.stringify(ctx)}`;
       return `Task: Estimate fair market value and produce negotiation advice.
 Return JSON with shape:
 {
- "fair_value": { "low": number, "avg": number, "high": number, "currency": "USD" },
+ "fair_value": { "low": number, "avg": number, "high": number, "currency": "CAD" },
  "decision": "BUY"|"NEGOTIATE"|"AVOID",
  "negotiation_advice": string,
  "key_points": string[],
@@ -111,7 +111,7 @@ Return JSON with shape:
  "tools": string[],
  "parts": string[],
  "warnings": string[],
- "estimated_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_cost": { "low": number, "high": number, "currency": "CAD" },
  "professional_recommended": boolean
 }
 Context: ${JSON.stringify(ctx)}`;
@@ -140,7 +140,7 @@ Return JSON ONLY with shape:
  "top_concerns": [{ "issue": string, "severity": "info"|"low"|"medium"|"high"|"critical", "impact": string }],
  "negotiation_advice": string,
  "talking_points": string[],
- "estimated_repair_cost": { "low": number, "high": number, "currency": "USD" },
+ "estimated_repair_cost": { "low": number, "high": number, "currency": "CAD" },
  "decision": "BUY"|"NEGOTIATE"|"AVOID",
  "decision_reason": string
 }
