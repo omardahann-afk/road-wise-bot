@@ -9,7 +9,6 @@ import {
   Wrench,
   Sparkles,
   Loader2,
-  ShieldAlert,
   ChevronLeft,
   Hammer,
   Droplet,
