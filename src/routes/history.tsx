@@ -270,7 +270,7 @@ function InspectionCard({ row }: { row: InspectionRow }) {
                   {v.year ?? "?"} {v.make ?? ""} {v.model ?? ""}
                 </h3>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {v.mileage ? `${v.mileage.toLocaleString()} mi` : ""}
+                  {v.mileage ? `${v.mileage.toLocaleString()} km` : ""}
                   {row.asking_price ? ` · Asking ${formatCAD(row.asking_price)}` : ""}
                 </p>
               </div>

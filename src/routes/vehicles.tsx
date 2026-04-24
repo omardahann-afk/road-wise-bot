@@ -158,7 +158,7 @@ function VehiclesPage() {
               </p>
               <p className="text-xs text-muted-foreground">
                 {[v.year, v.make, v.model].filter(Boolean).join(" ")}
-                {v.mileage ? ` · ${v.mileage.toLocaleString()} mi` : ""}
+                {v.mileage ? ` · ${v.mileage.toLocaleString()} km` : ""}
               </p>
             </div>
           </li>
