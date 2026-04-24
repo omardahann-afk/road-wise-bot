@@ -250,6 +250,10 @@ export interface RepairGuideMeta {
   videos: { title: string; channel: string; summary: string; duration: string }[];
   /** Estimated time range for the whole repair. */
   time_estimate: string;
+  /** "When to stop and see a mechanic" — clear escalation triggers. 2–4 bullets. */
+  when_to_stop: string[];
+  /** Torque / spec note — vehicle-dependent reminder. */
+  torque_note?: string;
 }
 
 export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
@@ -270,6 +274,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Body filler done right", channel: "Common patterns (AI summary)", summary: "Sand to bare metal, mix filler with hardener, apply thin coats, block-sand smooth, then prime, paint, and clear-coat.", duration: "10–12 min" },
     ],
     time_estimate: "1–4 hrs",
+    when_to_stop: [
+      "The dent has cracked or chipped paint exposing bare metal — needs proper bodywork, not PDR.",
+      "The panel is creased sharply or has multiple high/low spots that won't pull out.",
+      "The damage is on a structural area (A/B/C pillar, frame rail) — get it inspected for hidden frame damage.",
+    ],
+    torque_note: "No torque-critical fasteners on a typical PDR job; if you remove a panel, check your vehicle service manual for exact bolt torque before reinstalling.",
   },
   rust_repair: {
     safety: [
@@ -288,6 +298,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Sealing wheel arches against future rust", channel: "Common patterns (AI summary)", summary: "After paint cures, apply rubberized undercoat to wheel wells and rocker panels to block stone chips and salt.", duration: "5–7 min" },
     ],
     time_estimate: "2–5 hrs",
+    when_to_stop: [
+      "You can push a screwdriver through the panel — perforation means structural rust, escalate to a body shop.",
+      "Rust is on rocker panels, frame rails, subframe, brake/fuel lines, or strut towers — these are safety-critical.",
+      "Bubbling paint covers a large area; cutting and welding in fresh metal is a shop job.",
+    ],
+    torque_note: "If you remove suspension or subframe bolts to access rust, check your vehicle service manual for exact torque specs and replacement-bolt requirements.",
   },
   paint_repair: {
     safety: [
@@ -306,6 +322,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Touch-up paint that actually blends", channel: "Common patterns (AI summary)", summary: "Layer matched paint with a fine brush, let each coat flash, then top with clear and polish flush after curing.", duration: "7–9 min" },
     ],
     time_estimate: "30 min – 2 hrs",
+    when_to_stop: [
+      "The scratch goes through clear coat AND base coat to primer or metal — needs body-shop blend, not a touch-up pen.",
+      "You see fish-eyes, runs, or orange-peel after spraying — strip and respray is a shop-grade job.",
+      "Damage covers more than a hand-sized area; spot blending rarely matches in daylight.",
+    ],
+    torque_note: "No torque specs apply to paint work itself; if you removed trim or door handles, refer to your vehicle service manual before reinstalling.",
   },
   tire_service: {
     safety: [
@@ -324,6 +346,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Reading tire wear like a mechanic", channel: "Common patterns (AI summary)", summary: "Center wear = overinflation, edge wear = underinflation, cupping = worn shocks, inner wear = alignment.", duration: "5–7 min" },
     ],
     time_estimate: "30–60 min",
+    when_to_stop: [
+      "You see sidewall bulges, cord showing, or cracks — the tire is unsafe at any speed, replace immediately.",
+      "Wheel studs are stretched, cross-threaded, or a lug seat is damaged — a shop must repair before driving.",
+      "Uneven wear keeps coming back after rotation — there's an alignment, suspension, or bearing issue.",
+    ],
+    torque_note: "Lug-nut torque varies by vehicle (commonly 100–140 Nm / 75–105 lb-ft). Always check your vehicle service manual or door-jamb sticker for the exact spec, then re-torque after 80–100 km of driving.",
   },
   fluid_leak: {
     safety: [
@@ -342,6 +370,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Replacing a leaking valve cover gasket", channel: "Common patterns (AI summary)", summary: "Remove cover bolts in sequence, scrape the old gasket clean, set new gasket dry, torque to spec in pattern.", duration: "10–14 min" },
     ],
     time_estimate: "1–3 hrs",
+    when_to_stop: [
+      "Brake fluid, power steering, or fuel is leaking — do NOT drive, tow it. Brake failure is a life-safety risk.",
+      "The leak is from the transmission pan, rear main seal, or transfer case — labour-heavy, escalate to a shop.",
+      "Coolant is leaking internally (white smoke from exhaust, milky oil) — head gasket / cracked head, shop only.",
+    ],
+    torque_note: "Oil pan, valve cover, and transmission pan bolts have low, specific torque values that strip easily. Always check your vehicle service manual for exact torque and tightening sequence.",
   },
   warning_light_diagnostic: {
     safety: [
@@ -360,6 +394,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Diagnosing a misfire (P0300 / P030x)", channel: "Common patterns (AI summary)", summary: "Swap coils between cylinders, recheck which cylinder misfires, then replace the failed coil and matching plug.", duration: "8–10 min" },
     ],
     time_estimate: "30 min – 2 hrs",
+    when_to_stop: [
+      "Red lights are on (oil pressure, temperature, brake, charging) — pull over safely and stop driving.",
+      "Codes return immediately after clearing, or a misfire is severe under load — risk of catalytic converter damage.",
+      "You're chasing intermittent electrical faults across multiple systems — a shop with a bidirectional scan tool is faster and cheaper.",
+    ],
+    torque_note: "Oxygen sensors, knock sensors, and spark plugs have specific torque specs and often require anti-seize. Check your vehicle service manual for exact values before reinstalling.",
   },
   interior_repair: {
     safety: [
@@ -378,6 +418,12 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Fixing burn marks in cloth seats", channel: "Common patterns (AI summary)", summary: "Trim the burn, harvest fibers from a hidden area, glue them in, blend, and seal with fabric protector.", duration: "6–8 min" },
     ],
     time_estimate: "1–2 hrs",
+    when_to_stop: [
+      "Trim covers an airbag (door, headliner, A-pillar) — incorrect reassembly can disable airbag deployment.",
+      "Wiring harnesses or seat heater elements are damaged — shop diagnosis prevents short circuits or fires.",
+      "Headliner is sagging across the whole roof — it's a full re-skin job, not a spot repair.",
+    ],
+    torque_note: "Seat-mount bolts and seat-belt anchors are safety-critical. If you remove either, check your vehicle service manual for exact torque specs before driving.",
   },
   general_repair: {
     safety: [
@@ -396,5 +442,11 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       { title: "Torque specs explained", channel: "Common patterns (AI summary)", summary: "Use a torque wrench in a star pattern for wheels and head bolts; over-torque warps and strips, under-torque leaks.", duration: "5–7 min" },
     ],
     time_estimate: "1–4 hrs",
+    when_to_stop: [
+      "The repair touches brakes, steering, suspension, airbags, or fuel system and you're not 100% sure of the procedure.",
+      "You don't have a torque wrench, jack stands, or service-manual specs — postpone instead of guessing.",
+      "Symptom is intermittent, getting worse, or affects vehicle control — a shop scan and road test save time and risk.",
+    ],
+    torque_note: "Most fasteners on modern vehicles are torque-critical. Always check your vehicle service manual for exact torque specs and tightening sequence before reinstalling.",
   },
 };
