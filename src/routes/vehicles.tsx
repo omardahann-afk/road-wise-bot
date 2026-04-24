@@ -87,7 +87,7 @@ function VehiclesPage() {
         )}
       </div>
 
-      {!user && <p className="text-sm text-muted-foreground">Sign in to save vehicles.</p>}
+      {!user && <SignInEmptyState context="vehicles, diagnostics, inspections, and reports" />}
 
       {adding && user && (
         <Card className="mb-4">

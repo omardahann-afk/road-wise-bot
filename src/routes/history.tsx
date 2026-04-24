@@ -118,7 +118,7 @@ function HistoryPage() {
         </p>
       </div>
 
-      {!user && <p className="text-sm text-muted-foreground">Sign in to view your history.</p>}
+      {!user && <SignInEmptyState context="diagnostics, vehicles, inspections, and reports" />}
       {user && loading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
       {user && !loading && inspections.length > 0 && (
