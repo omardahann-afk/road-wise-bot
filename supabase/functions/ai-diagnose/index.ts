@@ -26,7 +26,8 @@ interface Body {
     | "valuation"
     | "repair_steps"
     | "inspection_frame"
-    | "inspection_final";
+    | "inspection_final"
+    | "insights";
   payload: Record<string, unknown>;
   vehicle?: Record<string, unknown> | null;
   knowledge?: unknown;
@@ -143,6 +144,31 @@ Return JSON ONLY with shape:
  "estimated_repair_cost": { "low": number, "high": number, "currency": "CAD" },
  "decision": "BUY"|"NEGOTIATE"|"AVOID",
  "decision_reason": string
+}
+Context: ${JSON.stringify(ctx)}`;
+    case "insights":
+      return `Task: Produce a "Real-world insights" knowledge panel for the issue/topic in the input. This replaces what a user would normally search for on a forum.
+HARD RULES:
+- Do NOT claim this is forum data, scraped content, or live community data. It is a common-pattern summary written from general automotive knowledge. Set "source_label" to "Common patterns (AI summary)".
+- Do NOT invent rare scenarios. Stick to what is genuinely common for this issue/component on consumer vehicles.
+- Pricing is CAD shop pricing in Canada. Diy_time should be a realistic range like "30–60 min" or "2–4 hrs".
+- If the issue text is vague, generic, or you don't recognize the component well, set "low_confidence": true and return shorter, more general guidance instead of fabricating specifics.
+- Use Canadian wording (km, CAD). Never say USD.
+- If a vehicle (year/make/model/mileage) is provided, tailor reports/fixes/cost to that vehicle (e.g. mention typical mileage-related issues, common known-problem parts for that platform when truly common). If no vehicle is provided, give general guidance and avoid model-specific claims.
+Return JSON ONLY with shape:
+{
+ "driver_reports": string[],            // 3–5 short bullets, what drivers typically notice
+ "common_fixes": [                       // 3–5 fixes, ordered most common first
+   { "fix": string, "route": "diy"|"shop"|"either", "note": string|null }
+ ],
+ "watch_out_for": string[],              // 2–4 mistakes / safety risks
+ "time_and_cost": {
+   "diy_time": string|null,              // e.g. "1–2 hrs" or null if shop-only
+   "shop_cost_cad": { "low": number, "high": number }|null,
+   "notes": string|null                  // optional brief context
+ },
+ "source_label": "Common patterns (AI summary)",
+ "low_confidence": boolean
 }
 Context: ${JSON.stringify(ctx)}`;
   }
