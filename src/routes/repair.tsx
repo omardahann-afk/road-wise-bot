@@ -265,6 +265,17 @@ function RepairWorkflowDetail(props: {
           icon={Icon}
         />
 
+        {/* Confidence line — sets expectations before diving in */}
+        <div className={`rounded-xl border-2 px-3 py-2.5 text-[12px] font-medium leading-snug ${
+          (ai?.difficulty ?? meta.difficulty) === "beginner"
+            ? "border-success/40 bg-success/5 text-success"
+            : (ai?.difficulty ?? meta.difficulty) === "intermediate"
+              ? "border-warning/40 bg-warning/5 text-warning"
+              : "border-destructive/40 bg-destructive/5 text-destructive"
+        }`}>
+          {confidenceLine(ai?.difficulty ?? meta.difficulty, !!ai?.professional_recommended)}
+        </div>
+
         {/* Inspection context badge (when deep-linked from inspection) */}
         {props.issue && (props.severity || props.location) && (
           <Card>
