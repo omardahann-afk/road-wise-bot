@@ -244,11 +244,10 @@ export function StepEngine({
         </CardContent>
       </Card>
 
-      {/* CTAs — sticky above the bottom nav, wraps cleanly on small screens */}
+      {/* CTAs — sticky above the bottom nav, fits 320px screens */}
       <div className="sticky bottom-20 z-10 -mx-1 flex items-stretch gap-1.5 rounded-2xl border border-border bg-card/95 p-1.5 shadow-card backdrop-blur sm:gap-2 sm:p-2">
-        <Button variant="outline" size="sm" onClick={goPrev} disabled={idx === 0} className="px-2 sm:px-3">
+        <Button variant="outline" size="sm" onClick={goPrev} disabled={idx === 0} aria-label="Previous step" className="px-2 sm:px-3">
           <ChevronLeft className="h-4 w-4" />
-          <span className="hidden xs:inline">Back</span>
         </Button>
         <Button
           variant={completed ? "secondary" : "outline"}
@@ -258,7 +257,7 @@ export function StepEngine({
           className={`px-2 sm:px-3 ${completed ? "" : "border-success/40 text-success hover:bg-success/10"}`}
         >
           <Check className="h-4 w-4" />
-          <span className="hidden xs:inline">{completed ? "Done" : "Mark"}</span>
+          <span className="ml-1 text-xs sm:text-sm">{completed ? "Done" : "Mark"}</span>
         </Button>
         <Button size="sm" className="flex-1 shadow-glow" onClick={goNext} disabled={idx >= total - 1 && completed}>
           {idx >= total - 1 ? "Finish" : "Next step"} <ChevronRight className="h-4 w-4" />
