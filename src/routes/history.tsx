@@ -33,7 +33,16 @@ interface DiagRow {
   summary: string | null;
   severity: string | null;
   created_at: string;
+  vehicle_id: string | null;
   ai_output: { pricing?: { low_estimate: number; average_estimate: number; high_estimate: number; issue_label?: string } } | null;
+}
+
+interface VehicleLite {
+  id: string;
+  nickname: string | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
 }
 
 interface InspectionRow {
