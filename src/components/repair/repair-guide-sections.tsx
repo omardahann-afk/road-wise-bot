@@ -7,6 +7,8 @@ import {
   PlayCircle,
   Clock,
   Gauge,
+  PhoneCall,
+  Settings2,
 } from "lucide-react";
 import type { RepairGuideMeta } from "@/lib/repair-engine";
 
@@ -155,7 +157,54 @@ export function WatchOutSection({ items }: { items: string[] }) {
 }
 
 /**
- * Quick video guide section. Currently shows AI-summary tutorial cards
+ * "When to stop and see a mechanic" — escalation triggers. Always-render-able
+ * section that prevents users from continuing into territory that's unsafe or
+ * outside the scope of a DIY guide. Mechanic-grade honesty over upsell.
+ */
+export function WhenToStopSection({ items }: { items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <Card className="border-2 border-primary/30 bg-primary/5">
+      <CardContent className="p-4">
+        <div className="mb-2 flex items-center gap-2 text-primary">
+          <PhoneCall className="h-4 w-4" />
+          <h3 className="text-sm font-bold uppercase tracking-wider">
+            When to stop and see a mechanic
+          </h3>
+        </div>
+        <ul className="space-y-1.5 text-xs leading-relaxed">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Torque / spec note — vehicle-dependent values. We never invent torque
+ * numbers; we tell users to look them up. Honest by design.
+ */
+export function TorqueNoteSection({ note }: { note?: string }) {
+  if (!note) return null;
+  return (
+    <Card className="border-border bg-muted/30">
+      <CardContent className="flex items-start gap-3 p-4">
+        <Settings2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Torque & specs
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed">{note}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
  * (no live YouTube/video API yet) — labeled honestly so users know it's
  * a written summary, not embedded video. Replace with real API later.
  */
