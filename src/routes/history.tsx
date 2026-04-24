@@ -200,12 +200,36 @@ function HistoryPage() {
 
       {user && !loading && diags.length > 0 && (
         <section>
-          <h2 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Diagnostics ({diags.length})
-          </h2>
-          <ul className="space-y-2">
-            {diags.map((r) => <DiagnosticCard key={r.id} row={r} />)}
-          </ul>
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="mr-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Diagnostics ({diags.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => setGroupByVehicle((v) => !v)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-[10px] font-medium hover:border-primary/40"
+            >
+              {groupByVehicle ? "Show flat list" : "Group by vehicle"}
+            </button>
+          </div>
+          {groupByVehicle ? (
+            <div className="space-y-4">
+              {Array.from(diagsByVehicle.entries()).map(([vehId, rows]) => (
+                <div key={vehId ?? "_none"}>
+                  <h3 className="mb-1.5 text-[11px] font-bold text-foreground">
+                    {vehicleLabel(vehId)} <span className="text-muted-foreground">({rows.length})</span>
+                  </h3>
+                  <ul className="space-y-2">
+                    {rows.map((r) => <DiagnosticCard key={r.id} row={r} />)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {diags.map((r) => <DiagnosticCard key={r.id} row={r} />)}
+            </ul>
+          )}
         </section>
       )}
 
