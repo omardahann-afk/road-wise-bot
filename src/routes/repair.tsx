@@ -301,11 +301,11 @@ function RepairWorkflowDetail(props: {
           <CardContent className="p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-bold">Step-by-step walkthrough</h3>
+                <h3 className="text-sm font-bold">Let's walk through it</h3>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {ai
-                    ? "AI-tailored to your vehicle and finding."
-                    : "Mechanic-grade default steps. Generate AI guide for vehicle-specific tweaks."}
+                    ? "Tailored to your vehicle and finding — you've got this."
+                    : "Mechanic-grade default steps. Generate a tailored guide for your specific vehicle and finding."}
                 </p>
               </div>
               {ai?.professional_recommended && (

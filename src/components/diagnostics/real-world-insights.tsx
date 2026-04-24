@@ -106,7 +106,7 @@ export function RealWorldInsights({ context, enabled = true }: Props) {
               <h3 className="text-sm font-bold uppercase tracking-wider">Real-world insights</h3>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              {data?.source_label ?? "Common patterns from AI summary — not live forum data."}
+              {data?.source_label ?? "Here's what drivers and shops typically see — common patterns, not live forum data."}
             </p>
           </div>
           {!loading && data && (

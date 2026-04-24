@@ -109,10 +109,15 @@ Return JSON with shape:
 }
 Context: ${JSON.stringify(ctx)}`;
     case "repair_steps":
-      return `Task: Generate practical, mechanic-grade repair steps for the given issue.
-Each step must be specific enough for a real garage workflow — no generic filler like "be careful" or "use proper tools".
-Where torque or capacity is vehicle-dependent, say "check your vehicle service manual for exact torque specs" instead of inventing a number.
-Include explicit "stop and see a mechanic" triggers in the warnings array when the work touches brakes, steering, airbags, fuel, or suspension.
+      return `Task: Generate practical, mechanic-grade repair steps for the given issue. Write like an experienced shop tech walking a friend through it — confident, specific, no filler.
+VOICE RULES (apply to every "step" and "detail"):
+- Use confident phrasing: "You'll likely need to…", "This part is usually located…", "In most cases…", "Expect the bolts to be tight…".
+- Mention real-world friction where it matters: stuck or seized bolts, tight clearance, rust, awkward angles, things that often break on first removal (clips, plastic vacuum lines, rusty brake-line fittings).
+- Drop in a practical tip at least every 2–3 steps: "Spray penetrating oil and let it sit 10 min if bolts are stuck", "Take a phone photo before unplugging connectors so reassembly is easy", "Label hoses with masking tape", "Crack the bleeder before you lift the car".
+- Each "detail" must be specific enough that a person in their driveway knows exactly what to do next. No "be careful" / "use proper tools" filler.
+- Where torque or fluid capacity is vehicle-dependent, say "check your vehicle service manual for the exact torque spec" — never invent numbers.
+- Include explicit "stop and see a mechanic" triggers in the warnings array when the work touches brakes, steering, airbags, fuel, or suspension.
+- Tone: trustworthy, calm, mechanic-honest. Never robotic.
 Return JSON with shape:
 {
  "title": string,
@@ -164,6 +169,12 @@ HARD RULES:
 - If the issue text is vague, generic, or you don't recognize the component well, set "low_confidence": true and return shorter, more general guidance instead of fabricating specifics.
 - Use Canadian wording (km, CAD). Never say USD.
 - If a vehicle (year/make/model/mileage) is provided, tailor reports/fixes/cost to that vehicle (e.g. mention typical mileage-related issues, common known-problem parts for that platform when truly common). If no vehicle is provided, give general guidance and avoid model-specific claims.
+VOICE RULES — write like a real driver/mechanic, not an AI:
+- driver_reports: lead each bullet with believable phrasing like "Some drivers notice…", "Often starts after…", "Usually shows up when…", "Most people first feel it as…", "Common complaint is…". Concrete sensations (sound, smell, pedal feel, dashboard behavior) — not generic "you may experience symptoms".
+- common_fixes: each "fix" reads like shop advice. Use "Most cases are solved by…", "Typically fixed by replacing…", "Cheapest first — try…". The "note" can mention real-world friction (stuck bolts, tight access, calibration needed after).
+- watch_out_for: practical, specific mistakes. Examples: "Do not over-tighten — most caliper bolts are 30–40 Nm; check spec", "Make sure the new pad backing plate is fully seated before tightening", "Don't reuse one-time-use crush washers", "Bleed the system after — a soft pedal means air is trapped".
+- time_and_cost.notes: short, realistic context like "Add ~$80 if rotors also need replacing" or "Most shops bundle this with an alignment".
+- Use confident, calm tone: "is likely", "in most cases", "you're typically safe to drive short distances, but…". Avoid hedging with "might possibly maybe".
 Return JSON ONLY with shape:
 {
  "driver_reports": string[],            // 3–5 short bullets, what drivers typically notice
