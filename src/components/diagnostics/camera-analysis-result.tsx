@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import type { RepairWorkflow } from "@/lib/valuation";
 import { severityClass } from "@/lib/severity";
 import { cameraConfidenceTone, type AiCameraResult } from "@/lib/camera-analysis";
 import {
@@ -172,7 +173,17 @@ export function CameraAnalysisResult({
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             {actions.showRepair && (
               <Button asChild size="sm" className="flex-1">
-                <Link to="/repair" search={repairWorkflow ? { workflow: repairWorkflow, issue: primaryComponent?.likely_issue ?? primaryComponent?.name } : {}}>
+                <Link
+                  to="/repair"
+                  search={
+                    repairWorkflow
+                      ? {
+                          workflow: repairWorkflow,
+                          issue: primaryComponent?.likely_issue ?? primaryComponent?.name,
+                        }
+                      : {}
+                  }
+                >
                   <Wrench className="h-4 w-4" /> View repair steps
                 </Link>
               </Button>
@@ -230,7 +241,7 @@ function UrgencyDot({ level }: { level: "low" | "medium" | "high" }): ReactNode 
 }
 
 /** Map an AI-described component / issue into a workflow slug for /repair. */
-function mapToWorkflow(name?: string, issue?: string | null): string | null {
+function mapToWorkflow(name?: string, issue?: string | null): RepairWorkflow | null {
   const text = `${name ?? ""} ${issue ?? ""}`.toLowerCase();
   if (!text.trim()) return null;
   if (/dent|ding|crease/.test(text)) return "dent_repair";
