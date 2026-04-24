@@ -34,6 +34,8 @@ import {
   ToolsSection,
   WatchOutSection,
   VideoGuideSection,
+  WhenToStopSection,
+  TorqueNoteSection,
 } from "@/components/repair/repair-guide-sections";
 
 // Maps repair workflow → pricing IssueType (deterministic).
@@ -348,6 +350,12 @@ function RepairWorkflowDetail(props: {
 
         {/* 6. WATCH OUT FOR — common mistakes & risks */}
         <WatchOutSection items={guideMeta?.watch_out ?? []} />
+
+        {/* 6b. WHEN TO STOP — escalate to mechanic */}
+        <WhenToStopSection items={guideMeta?.when_to_stop ?? []} />
+
+        {/* 6c. TORQUE / SPEC NOTE — vehicle-dependent */}
+        <TorqueNoteSection note={guideMeta?.torque_note} />
 
         {/* 7. VIDEO GUIDE — AI-summary tutorials (no live API yet) */}
         <VideoGuideSection videos={guideMeta?.videos ?? []} />
