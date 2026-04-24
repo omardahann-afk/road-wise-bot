@@ -7,7 +7,8 @@ export type AiTask =
   | "valuation"
   | "repair_steps"
   | "inspection_frame"
-  | "inspection_final";
+  | "inspection_final"
+  | "insights";
 
 export async function callAi<T = unknown>(
   task: AiTask,
