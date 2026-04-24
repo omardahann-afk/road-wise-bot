@@ -270,8 +270,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Mismatched touch-up paint stands out forever — verify the paint code on the door jamb sticker.",
     ],
     videos: [
-      { title: "Paintless dent removal basics", channel: "Common patterns (AI summary)", summary: "Identify shallow dents, warm the panel, pull from the deepest point outward in small steps, then tap down high spots.", duration: "6–8 min" },
-      { title: "Body filler done right", channel: "Common patterns (AI summary)", summary: "Sand to bare metal, mix filler with hardener, apply thin coats, block-sand smooth, then prime, paint, and clear-coat.", duration: "10–12 min" },
+      { title: "Paintless dent removal — start to finish", channel: "Common patterns (AI summary)", summary: "Shows how to identify a PDR-friendly dent, warm the panel, glue-pull from the deepest point outward, and tap down high spots. Straightforward but requires patience and the right tabs.", duration: "6–8 min" },
+      { title: "Body filler done right", channel: "Common patterns (AI summary)", summary: "Walks through sanding to bare metal, mixing filler with hardener, applying thin coats, block-sanding flat, then priming and painting. Beginner-friendly if you take your time on the sanding.", duration: "10–12 min" },
     ],
     time_estimate: "1–4 hrs",
     when_to_stop: [
@@ -294,8 +294,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Don't sand through to thin metal on rocker panels or wheel arches — perforation is unsafe.",
     ],
     videos: [
-      { title: "Treating surface rust the right way", channel: "Common patterns (AI summary)", summary: "Mask the area, sand to bright metal, apply rust converter, prime, paint, and clear in thin layers.", duration: "8–10 min" },
-      { title: "Sealing wheel arches against future rust", channel: "Common patterns (AI summary)", summary: "After paint cures, apply rubberized undercoat to wheel wells and rocker panels to block stone chips and salt.", duration: "5–7 min" },
+      { title: "Treating surface rust the right way", channel: "Common patterns (AI summary)", summary: "Shows masking, sanding to bright metal, applying rust converter, etching primer, paint, and clear in thin layers. Realistic on the time it takes — the sanding is the long part.", duration: "8–10 min" },
+      { title: "Sealing wheel arches against future rust", channel: "Common patterns (AI summary)", summary: "Walks through applying rubberized undercoat to wheel wells and rocker panels after the paint cures. Easy job, big payoff against road salt.", duration: "5–7 min" },
     ],
     time_estimate: "2–5 hrs",
     when_to_stop: [
@@ -318,8 +318,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Skipping the clay-bar step leaves contaminants under the polish swirl.",
     ],
     videos: [
-      { title: "Polishing out clear-coat scratches", channel: "Common patterns (AI summary)", summary: "Wash, decon, polish in 2-ft sections at low speed, wipe down, then seal with wax.", duration: "5–8 min" },
-      { title: "Touch-up paint that actually blends", channel: "Common patterns (AI summary)", summary: "Layer matched paint with a fine brush, let each coat flash, then top with clear and polish flush after curing.", duration: "7–9 min" },
+      { title: "Polishing out clear-coat scratches", channel: "Common patterns (AI summary)", summary: "Shows the full wash → clay-bar → polish workflow with a DA polisher in 2-ft sections. Beginner-friendly with the right pads; just keep the polisher moving.", duration: "5–8 min" },
+      { title: "Touch-up paint that actually blends", channel: "Common patterns (AI summary)", summary: "Walks through layering matched paint with a fine brush, letting each coat flash, topping with clear, and polishing flush after curing. Patience is the whole skill here.", duration: "7–9 min" },
     ],
     time_estimate: "30 min – 2 hrs",
     when_to_stop: [
@@ -342,8 +342,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Don't ignore uneven wear — it almost always means alignment or suspension wear.",
     ],
     videos: [
-      { title: "Rotating tires in 20 minutes", channel: "Common patterns (AI summary)", summary: "Lift one corner at a time, swap front-to-back per the manual's pattern, torque lugs in a star.", duration: "4–6 min" },
-      { title: "Reading tire wear like a mechanic", channel: "Common patterns (AI summary)", summary: "Center wear = overinflation, edge wear = underinflation, cupping = worn shocks, inner wear = alignment.", duration: "5–7 min" },
+      { title: "Rotating tires in 20 minutes", channel: "Common patterns (AI summary)", summary: "Shows how to chock, lift one corner at a time, swap front-to-back per the manual's pattern, and torque lugs in a star. Straightforward beginner job with basic tools.", duration: "4–6 min" },
+      { title: "Reading tire wear like a mechanic", channel: "Common patterns (AI summary)", summary: "Walks through what center wear, edge wear, cupping, and inner-edge wear actually mean — and which suspension or alignment issue causes each. Pure diagnosis, no tools needed.", duration: "5–7 min" },
     ],
     time_estimate: "30–60 min",
     when_to_stop: [
@@ -366,8 +366,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Over-torquing oil pan or valve cover bolts cracks the housing — follow spec.",
     ],
     videos: [
-      { title: "Identify any car leak by color", channel: "Common patterns (AI summary)", summary: "Clear/amber = brake, pink/red = trans, green/orange = coolant, brown/black = oil — diagnose before you pull anything.", duration: "5–6 min" },
-      { title: "Replacing a leaking valve cover gasket", channel: "Common patterns (AI summary)", summary: "Remove cover bolts in sequence, scrape the old gasket clean, set new gasket dry, torque to spec in pattern.", duration: "10–14 min" },
+      { title: "Identify any car leak by color", channel: "Common patterns (AI summary)", summary: "Shows how to drop cardboard, identify the fluid by color and smell, and narrow down which seal failed before pulling anything apart. Pure diagnosis — no tools needed.", duration: "5–6 min" },
+      { title: "Replacing a leaking valve cover gasket", channel: "Common patterns (AI summary)", summary: "Walks through removing the cover bolts in sequence, scraping the old gasket clean without gouging, setting a new gasket dry, and torquing in pattern. Doable for a confident beginner.", duration: "10–14 min" },
     ],
     time_estimate: "1–3 hrs",
     when_to_stop: [
@@ -390,8 +390,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Ignoring pending codes — they become active codes and harder to trace.",
     ],
     videos: [
-      { title: "Reading OBD2 codes like a pro", channel: "Common patterns (AI summary)", summary: "Pull both stored and pending codes, note freeze-frame data, then research the most likely failed component before swapping parts.", duration: "6–8 min" },
-      { title: "Diagnosing a misfire (P0300 / P030x)", channel: "Common patterns (AI summary)", summary: "Swap coils between cylinders, recheck which cylinder misfires, then replace the failed coil and matching plug.", duration: "8–10 min" },
+      { title: "Reading OBD2 codes like a pro", channel: "Common patterns (AI summary)", summary: "Shows how to pull stored AND pending codes plus freeze-frame data, then research the most likely failed component before swapping parts. Anyone with a scanner can follow it.", duration: "6–8 min" },
+      { title: "Diagnosing a misfire (P0300 / P030x)", channel: "Common patterns (AI summary)", summary: "Walks through swapping coils between cylinders to confirm which one is bad, then replacing the coil and matching plug. Straightforward, but tight access on some engines.", duration: "8–10 min" },
     ],
     time_estimate: "30 min – 2 hrs",
     when_to_stop: [
@@ -414,8 +414,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Mismatched color stands out in daylight — test on a hidden spot first.",
     ],
     videos: [
-      { title: "Repairing a leather seat tear", channel: "Common patterns (AI summary)", summary: "Trim loose fibers, glue a backing patch, fill the tear with compound, color-match dye, then seal.", duration: "10–12 min" },
-      { title: "Fixing burn marks in cloth seats", channel: "Common patterns (AI summary)", summary: "Trim the burn, harvest fibers from a hidden area, glue them in, blend, and seal with fabric protector.", duration: "6–8 min" },
+      { title: "Repairing a leather seat tear", channel: "Common patterns (AI summary)", summary: "Shows how to trim loose fibers, glue a backing patch under the tear, fill with compound, color-match dye, and seal. Patient work — colour matching is the hardest part.", duration: "10–12 min" },
+      { title: "Fixing burn marks in cloth seats", channel: "Common patterns (AI summary)", summary: "Walks through trimming the burn, harvesting fibres from a hidden area, gluing them in, blending, and sealing with fabric protector. Forgiving repair — easy to retry if the first pass looks off.", duration: "6–8 min" },
     ],
     time_estimate: "1–2 hrs",
     when_to_stop: [
@@ -438,8 +438,8 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
       "Rushing a verification drive — confirm the symptom is fully gone before closing the job.",
     ],
     videos: [
-      { title: "How to diagnose any car problem", channel: "Common patterns (AI summary)", summary: "Reproduce the symptom, gather conditions, check TSBs, narrow to a system, then test before swapping parts.", duration: "8–10 min" },
-      { title: "Torque specs explained", channel: "Common patterns (AI summary)", summary: "Use a torque wrench in a star pattern for wheels and head bolts; over-torque warps and strips, under-torque leaks.", duration: "5–7 min" },
+      { title: "How to diagnose any car problem", channel: "Common patterns (AI summary)", summary: "Shows the mechanic's approach: reproduce the symptom, document conditions, check TSBs, narrow to a system, and test before swapping parts. Mostly thinking — no tools needed.", duration: "8–10 min" },
+      { title: "Torque specs explained", channel: "Common patterns (AI summary)", summary: "Walks through using a torque wrench properly in a star pattern for wheels and head bolts. Beginner-friendly — explains why over-torque warps and under-torque leaks.", duration: "5–7 min" },
     ],
     time_estimate: "1–4 hrs",
     when_to_stop: [
