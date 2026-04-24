@@ -335,13 +335,19 @@ function RepairWorkflowDetail(props: {
         );
       })()}
 
-      <StepEngine
-        workflow={props.workflowId}
-        issue={props.issue}
-        steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
-        userId={props.userId}
-      />
-
+      {props.userId ? (
+        <StepEngine
+          workflow={props.workflowId}
+          issue={props.issue}
+          steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
+          userId={props.userId}
+        />
+      ) : (
+        <GuestStepPreview
+          previewStep={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])[0]}
+          totalSteps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]).length}
+        />
+      )}
       {ai && ai.warnings.length > 0 && (
         <Card className="mt-4 border-warning/40 bg-warning/5">
           <CardContent className="p-4">
@@ -380,5 +386,66 @@ function RepairWorkflowDetail(props: {
         </div>
       )}
     </AppShell>
+  );
+}
+
+import { Lock, LogIn, Eye } from "lucide-react";
+import type { EngineStep } from "@/lib/repair-engine";
+
+/**
+ * Guest preview: shows step 1 of the repair guide and locks the rest behind a
+ * sign-in. Free account gate — no payments. Core scan/diagnose features are
+ * never blocked; only the multi-step interactive walkthrough requires sign-in.
+ */
+function GuestStepPreview({
+  previewStep,
+  totalSteps,
+}: {
+  previewStep: EngineStep | undefined;
+  totalSteps: number;
+}) {
+  if (!previewStep) return null;
+  return (
+    <div className="space-y-3">
+      <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+        <CardContent className="p-5">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-glow text-base font-black text-primary-foreground shadow-glow">
+              1
+            </div>
+            <div className="flex-1">
+              <Badge variant="outline" className="mb-1 text-[10px]">
+                <Eye className="mr-1 h-3 w-3" /> Free preview · Step 1 of {totalSteps}
+              </Badge>
+              <h3 className="text-lg font-bold leading-tight">{previewStep.title}</h3>
+            </div>
+          </div>
+          <p className="text-sm text-foreground/90">{previewStep.instruction}</p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card shadow-glow">
+        <CardContent className="space-y-3 p-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary">
+            <Lock className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold">Unlock the full repair guide</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {totalSteps - 1} more step{totalSteps - 1 === 1 ? "" : "s"} with tools, warnings, and progress
+              tracking. Free — sign in to continue and we'll save your progress across devices.
+            </p>
+          </div>
+          <Button asChild className="w-full">
+            <Link to="/auth">
+              <LogIn className="h-4 w-4" /> Sign in to unlock
+            </Link>
+          </Button>
+          <p className="text-[10px] text-muted-foreground">
+            Scanning and basic diagnoses always stay free.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

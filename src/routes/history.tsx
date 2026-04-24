@@ -33,7 +33,16 @@ interface DiagRow {
   summary: string | null;
   severity: string | null;
   created_at: string;
+  vehicle_id: string | null;
   ai_output: { pricing?: { low_estimate: number; average_estimate: number; high_estimate: number; issue_label?: string } } | null;
+}
+
+interface VehicleLite {
+  id: string;
+  nickname: string | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
 }
 
 interface InspectionRow {
@@ -74,24 +83,47 @@ function HistoryPage() {
   const [sort, setSort] = useState<SortMode>("newest");
   const [decisionFilter, setDecisionFilter] = useState<"ALL" | "BUY" | "NEGOTIATE" | "AVOID">("ALL");
 
+  const [vehicles, setVehicles] = useState<VehicleLite[]>([]);
+  const [groupByVehicle, setGroupByVehicle] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
     (async () => {
-      const [d, i, v] = await Promise.all([
-        supabase.from("diagnostics").select("id,mode,summary,severity,created_at,ai_output")
+      const [d, i, v, veh] = await Promise.all([
+        supabase.from("diagnostics").select("id,mode,summary,severity,created_at,vehicle_id,ai_output")
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("inspections").select("id,vehicle_info,asking_price,scores,recommendation,findings,created_at")
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("valuation_reports").select("id,vehicle_info,asking_price,fair_value_low,fair_value_avg,fair_value_high,decision,created_at")
           .order("created_at", { ascending: false }).limit(50),
+        supabase.from("vehicles").select("id,nickname,year,make,model"),
       ]);
       setDiags((d.data as DiagRow[] | null) ?? []);
       setInspections((i.data as InspectionRow[] | null) ?? []);
       setValuations((v.data as ValRow[] | null) ?? []);
+      setVehicles((veh.data as VehicleLite[] | null) ?? []);
       setLoading(false);
     })();
   }, [user, authLoading]);
+
+  const diagsByVehicle = useMemo(() => {
+    const map = new Map<string | null, DiagRow[]>();
+    diags.forEach((d) => {
+      const k = d.vehicle_id ?? null;
+      const list = map.get(k) ?? [];
+      list.push(d);
+      map.set(k, list);
+    });
+    return map;
+  }, [diags]);
+
+  const vehicleLabel = (id: string | null): string => {
+    if (!id) return "Unassigned";
+    const v = vehicles.find((x) => x.id === id);
+    if (!v) return "Vehicle";
+    return v.nickname || `${v.year ?? ""} ${v.make ?? ""} ${v.model ?? ""}`.trim() || "Vehicle";
+  };
 
   const sortedInspections = useMemo(() => {
     let rows = [...inspections];
@@ -168,12 +200,36 @@ function HistoryPage() {
 
       {user && !loading && diags.length > 0 && (
         <section>
-          <h2 className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Diagnostics ({diags.length})
-          </h2>
-          <ul className="space-y-2">
-            {diags.map((r) => <DiagnosticCard key={r.id} row={r} />)}
-          </ul>
+          <div className="mb-3 flex items-center gap-2">
+            <h2 className="mr-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Diagnostics ({diags.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => setGroupByVehicle((v) => !v)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-[10px] font-medium hover:border-primary/40"
+            >
+              {groupByVehicle ? "Show flat list" : "Group by vehicle"}
+            </button>
+          </div>
+          {groupByVehicle ? (
+            <div className="space-y-4">
+              {Array.from(diagsByVehicle.entries()).map(([vehId, rows]) => (
+                <div key={vehId ?? "_none"}>
+                  <h3 className="mb-1.5 text-[11px] font-bold text-foreground">
+                    {vehicleLabel(vehId)} <span className="text-muted-foreground">({rows.length})</span>
+                  </h3>
+                  <ul className="space-y-2">
+                    {rows.map((r) => <DiagnosticCard key={r.id} row={r} />)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {diags.map((r) => <DiagnosticCard key={r.id} row={r} />)}
+            </ul>
+          )}
         </section>
       )}
 

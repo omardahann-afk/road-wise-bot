@@ -5,6 +5,12 @@ import type { RepairWorkflow } from "@/lib/valuation";
 import { severityClass } from "@/lib/severity";
 import { cameraConfidenceTone, type AiCameraResult } from "@/lib/camera-analysis";
 import {
+  estimateRepairCost,
+  classifyIssueType,
+  formatCAD,
+  type Severity,
+} from "@/lib/pricing";
+import {
   ShieldAlert,
   Wrench,
   Sparkles,
@@ -12,6 +18,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   HelpCircle,
+  Banknote,
+  Clock,
+  Car,
+  XCircle,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
@@ -37,10 +47,12 @@ export function CameraAnalysisResult({
   actions?: ActionConfig;
 }) {
   // Derive headline urgency from confidence + presence of warnings.
-  const urgency = useMemo<"low" | "medium" | "high">(() => {
-    if (result.warnings && result.warnings.length >= 2) return "high";
+  const urgency = useMemo<"low" | "medium" | "high" | "critical">(() => {
+    const warningCount = result.warnings?.length ?? 0;
+    if (warningCount >= 3) return "critical";
+    if (warningCount >= 2) return "high";
     const issueCount = result.likely_components?.filter((c) => !!c.likely_issue).length ?? 0;
-    if (issueCount >= 2 || result.warnings?.length === 1) return "medium";
+    if (issueCount >= 2 || warningCount === 1) return "medium";
     return "low";
   }, [result]);
 
@@ -50,27 +62,107 @@ export function CameraAnalysisResult({
     ? mapToWorkflow(primaryComponent.name, primaryComponent.likely_issue)
     : null;
 
+  // Confidence % (rough mapping for the headline badge).
+  const confidencePct =
+    result.overall_confidence === "high"
+      ? 92
+      : result.overall_confidence === "medium"
+        ? 72
+        : 45;
+
+  // Map AI urgency → pricing severity for the cost/time row.
+  const severityForPricing: Severity =
+    urgency === "critical" ? "critical" : urgency === "high" ? "high" : urgency === "medium" ? "medium" : "low";
+
+  // Deterministic CAD pricing + time estimate for the primary issue.
+  const issueText = primaryComponent
+    ? `${primaryComponent.name} ${primaryComponent.likely_issue ?? ""}`
+    : result.summary;
+  const pricing = useMemo(
+    () =>
+      estimateRepairCost({
+        issue_type: classifyIssueType(issueText ?? ""),
+        severity: severityForPricing,
+        region: "canada",
+      }),
+    [issueText, severityForPricing],
+  );
+
+  // "Safe to drive" derives from urgency + warnings vocabulary.
+  const safeToDrive = isSafeToDrive(urgency, result.warnings ?? []);
+
   return (
     <Card className="overflow-hidden border-primary/30">
       <CardContent className="space-y-4 p-4">
-        {/* Header banner */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <span
-              className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-medium ${severityClass("info")}`}
-            >
-              {label}
-            </span>
-            <p className="mt-2 text-sm leading-relaxed">{result.summary}</p>
+        {/* PREMIUM HEADER: detected part as title, confidence + severity badges */}
+        <div className="space-y-2">
+          <span
+            className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-medium ${severityClass("info")}`}
+          >
+            {label}
+          </span>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold leading-tight tracking-tight">
+                {primaryComponent?.name ?? "Analysis"}
+              </h2>
+              {primaryComponent?.likely_issue && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {primaryComponent.likely_issue}
+                </p>
+              )}
+            </div>
+            {result.overall_confidence && (
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${cameraConfidenceTone(result.overall_confidence)}`}
+                >
+                  {confidencePct}% confidence
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${severityClass(severityForPricing)}`}
+                >
+                  {urgency}
+                </span>
+              </div>
+            )}
           </div>
-          {result.overall_confidence && (
-            <span
-              className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cameraConfidenceTone(result.overall_confidence)}`}
-            >
-              {result.overall_confidence} confidence
-            </span>
-          )}
         </div>
+
+        {/* MAIN INSIGHT */}
+        <p className="rounded-xl border border-border bg-muted/30 p-3 text-sm leading-relaxed">
+          {result.summary}
+        </p>
+
+        {/* INFO ROW: cost / time / safe-to-drive — only shown when we have a real diagnosis */}
+        {!lowConfidence && primaryComponent && (
+          <div className="grid grid-cols-3 gap-2">
+            <InfoCell
+              icon={<Banknote className="h-3.5 w-3.5" />}
+              label="Est. cost"
+              value={`${formatCAD(pricing.low_estimate)}–${formatCAD(pricing.high_estimate)}`}
+              tone="text-foreground"
+            />
+            <InfoCell
+              icon={<Clock className="h-3.5 w-3.5" />}
+              label="Time to fix"
+              value={formatHours(pricing.time_estimate_hours)}
+              tone="text-foreground"
+            />
+            <InfoCell
+              icon={
+                safeToDrive ? (
+                  <Car className="h-3.5 w-3.5" />
+                ) : (
+                  <XCircle className="h-3.5 w-3.5" />
+                )
+              }
+              label="Safe to drive"
+              value={safeToDrive ? "Yes" : "No"}
+              tone={safeToDrive ? "text-success" : "text-destructive"}
+            />
+          </div>
+        )}
 
         {/* Low-confidence honest fallback */}
         {lowConfidence && (
@@ -95,14 +187,14 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* Structured detected component(s) */}
-        {result.likely_components?.length > 0 && (
+        {/* Structured detected component(s) — secondary detail */}
+        {result.likely_components?.length > 1 && (
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Detected
+              Other detections
             </h4>
             <ul className="space-y-2">
-              {result.likely_components.map((component, index) => (
+              {result.likely_components.slice(1).map((component, index) => (
                 <li
                   key={index}
                   className="rounded-xl border border-border bg-muted/30 p-3"
@@ -134,12 +226,17 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* Urgency badge */}
-        {!lowConfidence && (
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-background/40 px-3 py-2 text-xs">
-            <UrgencyDot level={urgency} />
-            <span className="font-semibold">Urgency:</span>
-            <span className="capitalize text-muted-foreground">{urgency}</span>
+        {/* "What to check" for primary component */}
+        {primaryComponent?.what_to_check && primaryComponent.what_to_check.length > 0 && (
+          <div className="rounded-xl border border-border bg-background/40 p-3">
+            <h4 className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              What to check
+            </h4>
+            <ul className="list-disc space-y-0.5 pl-4 text-xs">
+              {primaryComponent.what_to_check.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -168,62 +265,90 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* Action buttons */}
+        {/* ACTION HUB */}
         {actions && (actions.showRepair || actions.showCleaning || actions.onSave) && !lowConfidence && (
-          <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-            {actions.showRepair && (
-              <Button asChild size="sm" className="flex-1">
-                <Link
-                  to="/repair"
-                  search={
-                    repairWorkflow
-                      ? {
-                          workflow: repairWorkflow,
-                          issue: primaryComponent?.likely_issue ?? primaryComponent?.name,
-                        }
-                      : {}
-                  }
+          <div className="space-y-2 pt-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              What next?
+            </h4>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {actions.showRepair && (
+                <Button asChild size="sm" className="flex-1">
+                  <Link
+                    to="/repair"
+                    search={
+                      repairWorkflow
+                        ? {
+                            workflow: repairWorkflow,
+                            issue: primaryComponent?.likely_issue ?? primaryComponent?.name,
+                            severity: severityForPricing,
+                          }
+                        : {}
+                    }
+                  >
+                    <Wrench className="h-4 w-4" /> Fix it
+                  </Link>
+                </Button>
+              )}
+              {actions.showCleaning && (
+                <Button asChild size="sm" variant="outline" className="flex-1">
+                  <Link
+                    to="/cleaning"
+                    search={{
+                      area: primaryComponent?.name,
+                      issue: primaryComponent?.likely_issue ?? undefined,
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4" /> Cleaning tips
+                  </Link>
+                </Button>
+              )}
+              {actions.onSave && (
+                <Button
+                  size="sm"
+                  variant={actions.saved ? "outline" : "secondary"}
+                  onClick={actions.onSave}
+                  disabled={actions.saving || actions.saved}
+                  className="flex-1"
                 >
-                  <Wrench className="h-4 w-4" /> View repair steps
-                </Link>
-              </Button>
-            )}
-            {actions.showCleaning && (
-              <Button asChild size="sm" variant="outline" className="flex-1">
-                <Link
-                  to="/cleaning"
-                  search={{
-                    area: primaryComponent?.name,
-                    issue: primaryComponent?.likely_issue ?? undefined,
-                  }}
-                >
-                  <Sparkles className="h-4 w-4" /> Cleaning tips
-                </Link>
-              </Button>
-            )}
-            {actions.onSave && (
-              <Button
-                size="sm"
-                variant={actions.saved ? "outline" : "secondary"}
-                onClick={actions.onSave}
-                disabled={actions.saving || actions.saved}
-                className="flex-1"
-              >
-                {actions.saved ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" /> Saved
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" /> Save report
-                  </>
-                )}
-              </Button>
-            )}
+                  {actions.saved ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" /> Saved
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" /> Save report
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function InfoCell({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background/40 px-2 py-2 text-center">
+      <div className="flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className={`mt-1 text-[11px] font-bold leading-tight ${tone}`}>{value}</div>
+    </div>
   );
 }
 
@@ -240,10 +365,23 @@ function QualityCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function UrgencyDot({ level }: { level: "low" | "medium" | "high" }): ReactNode {
-  const color =
-    level === "high" ? "bg-destructive" : level === "medium" ? "bg-warning" : "bg-success";
-  return <span className={`h-2 w-2 rounded-full ${color}`} />;
+function formatHours(range: [number, number]): string {
+  const [lo, hi] = range;
+  if (lo === 0 && hi === 0) return "—";
+  const fmt = (n: number) => (Number.isInteger(n) ? `${n}` : n.toFixed(1));
+  if (Math.abs(lo - hi) < 0.01) return `${fmt(lo)} h`;
+  return `${fmt(lo)}–${fmt(hi)} h`;
+}
+
+function isSafeToDrive(
+  urgency: "low" | "medium" | "high" | "critical",
+  warnings: string[],
+): boolean {
+  if (urgency === "critical") return false;
+  const text = warnings.join(" ").toLowerCase();
+  if (/brake|airbag|steering|fire|fuel leak|do not drive|tow/i.test(text)) return false;
+  if (urgency === "high" && /leak|smoke|overheat/.test(text)) return false;
+  return true;
 }
 
 /** Map an AI-described component / issue into a workflow slug for /repair. */
