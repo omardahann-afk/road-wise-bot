@@ -228,31 +228,46 @@ function RepairWorkflowDetail(props: {
     }
   }
 
+  const guideMeta = GUIDE_META[props.workflowId];
+  const engineSteps = normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]);
+  const issue = WORKFLOW_TO_ISSUE[props.workflowId];
+  const sev: Severity = props.severity ?? "medium";
+  const pricing = estimateRepairCost({ issue_type: issue, severity: sev, region: "canada" });
+
+  // Combine deterministic safety with any AI-generated warnings, de-duped.
+  const safetyItems = Array.from(
+    new Set([...(guideMeta?.safety ?? []), ...((ai?.warnings ?? []) as string[])]),
+  );
+  // Combine deterministic tools with any AI-suggested tools, de-duped, capped.
+  const toolItems = Array.from(
+    new Set([...(guideMeta?.tools ?? []), ...((ai?.tools ?? []) as string[])]),
+  ).slice(0, 6);
+
+  const headerSubtitle = props.issue
+    ? props.issue
+    : meta.description;
+  const timeEstimate = guideMeta?.time_estimate ?? "1–2 hrs";
+
   return (
     <AppShell title="Repair">
       <Button variant="ghost" size="sm" onClick={props.onBack} className="mb-3 -ml-2">
         <ChevronLeft className="h-4 w-4" /> All workflows
       </Button>
 
-      {/* Workflow header */}
-      <Card className="mb-4 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-glow">
-              <Icon className="h-7 w-7" />
-            </div>
-            <div className="flex-1">
-              <Badge variant="outline" className="mb-1 text-[10px]">
-                {meta.difficulty}
-              </Badge>
-              <h2 className="text-xl font-bold">{meta.title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{meta.description}</p>
-            </div>
-          </div>
+      <div className="space-y-4">
+        {/* 1. PREMIUM HEADER — title, difficulty, estimated time */}
+        <RepairGuideHeader
+          title={ai?.title ?? meta.title}
+          subtitle={headerSubtitle}
+          difficulty={ai?.difficulty ?? meta.difficulty}
+          timeEstimate={timeEstimate}
+          icon={Icon}
+        />
 
-          {/* Preloaded inspection context */}
-          {props.issue && (
-            <div className="mt-4 rounded-xl border border-border bg-background/50 p-3">
+        {/* Inspection context badge (when deep-linked from inspection) */}
+        {props.issue && (props.severity || props.location) && (
+          <Card>
+            <CardContent className="p-3">
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   From inspection
@@ -265,133 +280,96 @@ function RepairWorkflowDetail(props: {
                   </span>
                 )}
               </div>
-              <p className="text-sm font-medium">{props.issue}</p>
               {props.location && (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   Location: {props.location}
                 </p>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Deterministic pricing for this workflow */}
-      {(() => {
-        const issue = WORKFLOW_TO_ISSUE[props.workflowId];
-        const sev: Severity = props.severity ?? "medium";
-        const pricing = estimateRepairCost({
-          issue_type: issue,
-          severity: sev,
-          region: "canada",
-        });
-        return (
-          <div className="mb-4">
-            <RepairPricingCard pricing={pricing} title={`${meta.title} — typical pricing`} />
-          </div>
-        );
-      })()}
-
-      {/* Step engine — ALWAYS available, uses fallback steps until AI enriches them */}
-      {(() => {
-        const engineSteps = normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]);
-        return (
-          <Card className="mb-4 bg-gradient-card">
-            <CardContent className="p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold">{ai?.title ?? `${meta.title} — guided steps`}</h3>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {ai
-                      ? "AI-tailored to your vehicle and finding."
-                      : "Deterministic step pack — generate AI guide for vehicle-specific tweaks."}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px]">
-                    {ai?.difficulty ?? meta.difficulty}
-                  </Badge>
-                  {ai?.professional_recommended && (
-                    <Badge variant="destructive" className="text-[10px]">Pro recommended</Badge>
-                  )}
-                  {ai?.estimated_cost && (
-                    <Badge variant="outline" className="text-[10px]">
-                      CA${ai.estimated_cost.low}–CA${ai.estimated_cost.high}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <Button
-                onClick={generateGuide}
-                disabled={loading}
-                variant={ai ? "outline" : "default"}
-                size="sm"
-                className={ai ? "" : "w-full shadow-glow"}
-              >
-                {loading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating tailored guide…</>
-                ) : ai ? (
-                  <><Sparkles className="h-4 w-4" /> Re-generate AI guide</>
-                ) : (
-                  <><Sparkles className="h-4 w-4" /> Generate AI repair guide</>
-                )}
-              </Button>
             </CardContent>
           </Card>
-        );
-      })()}
+        )}
 
-      {props.userId ? (
-        <StepEngine
-          workflow={props.workflowId}
-          issue={props.issue}
-          steps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])}
-          userId={props.userId}
-        />
-      ) : (
-        <GuestStepPreview
-          previewStep={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId])[0]}
-          totalSteps={normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]).length}
-        />
-      )}
-      {ai && ai.warnings.length > 0 && (
-        <Card className="mt-4 border-warning/40 bg-warning/5">
+        {/* 2. MANDATORY SAFETY — always shown at top */}
+        <SafetySection items={safetyItems} />
+
+        {/* 3. TOOLS REQUIRED */}
+        <ToolsSection items={toolItems} />
+
+        {/* 4. AI generator CTA — optional tailoring */}
+        <Card className="bg-gradient-card">
           <CardContent className="p-4">
-            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-warning">
-              <ShieldAlert className="h-4 w-4" /> Safety
-            </h4>
-            <ul className="list-disc space-y-1 pl-5 text-xs">
-              {ai.warnings.map((w, i) => <li key={i}>{w}</li>)}
-            </ul>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold">Step-by-step walkthrough</h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {ai
+                    ? "AI-tailored to your vehicle and finding."
+                    : "Mechanic-grade default steps. Generate AI guide for vehicle-specific tweaks."}
+                </p>
+              </div>
+              {ai?.professional_recommended && (
+                <Badge variant="destructive" className="shrink-0 text-[10px]">
+                  Pro recommended
+                </Badge>
+              )}
+            </div>
+
+            <Button
+              onClick={generateGuide}
+              disabled={loading}
+              variant={ai ? "outline" : "default"}
+              size="sm"
+              className={ai ? "" : "w-full shadow-glow"}
+            >
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Generating tailored guide…</>
+              ) : ai ? (
+                <><Sparkles className="h-4 w-4" /> Re-generate AI guide</>
+              ) : (
+                <><Sparkles className="h-4 w-4" /> Generate AI repair guide</>
+              )}
+            </Button>
           </CardContent>
         </Card>
-      )}
 
-      {ai && (ai.tools.length > 0 || ai.parts.length > 0) && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        {/* 5. STEPS — full engine for signed-in users, preview + lock for guests */}
+        {props.userId ? (
+          <StepEngine
+            workflow={props.workflowId}
+            issue={props.issue}
+            steps={engineSteps}
+            userId={props.userId}
+          />
+        ) : (
+          <GuestStepPreview
+            previewStep={engineSteps[0]}
+            totalSteps={engineSteps.length}
+          />
+        )}
+
+        {/* 6. WATCH OUT FOR — common mistakes & risks */}
+        <WatchOutSection items={guideMeta?.watch_out ?? []} />
+
+        {/* 7. VIDEO GUIDE — AI-summary tutorials (no live API yet) */}
+        <VideoGuideSection videos={guideMeta?.videos ?? []} />
+
+        {/* 8. Deterministic CAD pricing for this workflow */}
+        <RepairPricingCard pricing={pricing} title={`${meta.title} — typical pricing`} />
+
+        {/* 9. AI parts — only when generator has run */}
+        {ai && ai.parts.length > 0 && (
           <Card>
             <CardContent className="p-4">
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tools
-              </h4>
-              <ul className="space-y-1 text-xs">
-                {ai.tools.map((t, i) => <li key={i}>• {t}</li>)}
-              </ul>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Parts
+                Parts you may need
               </h4>
               <ul className="space-y-1 text-xs">
                 {ai.parts.map((p, i) => <li key={i}>• {p}</li>)}
               </ul>
             </CardContent>
           </Card>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   );
 }
