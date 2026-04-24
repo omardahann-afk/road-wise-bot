@@ -205,6 +205,9 @@ export function TorqueNoteSection({ note }: { note?: string }) {
     </Card>
   );
 }
+
+/**
+ * Quick video guide section. Currently shows AI-summary tutorial cards
  * (no live YouTube/video API yet) — labeled honestly so users know it's
  * a written summary, not embedded video. Replace with real API later.
  */
