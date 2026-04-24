@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { severityClass } from "@/lib/severity";
 import { formatCAD } from "@/lib/pricing";
+import { SignInEmptyState } from "@/components/layout/sign-in-empty-state";
 
 export const Route = createFileRoute("/history")({
   component: HistoryPage,

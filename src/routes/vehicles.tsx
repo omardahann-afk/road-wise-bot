@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Car, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { SignInEmptyState } from "@/components/layout/sign-in-empty-state";
 
 export const Route = createFileRoute("/vehicles")({
   component: VehiclesPage,
