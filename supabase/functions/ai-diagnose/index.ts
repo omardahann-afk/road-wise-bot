@@ -112,11 +112,13 @@ Context: ${JSON.stringify(ctx)}`;
       return `Task: Generate practical, mechanic-grade repair steps for the given issue. Write like an experienced shop tech walking a friend through it — confident, specific, no filler.
 VOICE RULES (apply to every "step" and "detail"):
 - Use confident phrasing: "You'll likely need to…", "This part is usually located…", "In most cases…", "Expect the bolts to be tight…".
-- Mention real-world friction where it matters: stuck or seized bolts, tight clearance, rust, awkward angles, things that often break on first removal (clips, plastic vacuum lines, rusty brake-line fittings).
-- Drop in a practical tip at least every 2–3 steps: "Spray penetrating oil and let it sit 10 min if bolts are stuck", "Take a phone photo before unplugging connectors so reassembly is easy", "Label hoses with masking tape", "Crack the bleeder before you lift the car".
+- Mention real-world friction where it matters: stuck or seized bolts (especially over 100k km or in road-salt regions), tight clearance, rust, awkward angles, things that often break on first removal (plastic clips, vacuum lines, brake-line fittings).
+- Drop a practical, human tip at least every 2–3 steps: "Take your time here", "This step can be tricky — go slow", "Spray penetrating oil and let it sit 10 min if bolts are stuck", "Snap a phone photo before unplugging connectors so reassembly is easy", "Label hoses with masking tape", "Crack the bleeder before you lift the car".
+- If vehicle make/model/year/mileage is provided, weave in 1–2 model-specific or mileage-specific notes where genuinely common (e.g. "On higher-mileage <make> <model>s, the <component> bracket is often seized — budget extra time", or "<make> uses a 12mm reverse-Torx here, not a standard hex"). Don't force it if you don't truly know the platform — keep it generic instead.
 - Each "detail" must be specific enough that a person in their driveway knows exactly what to do next. No "be careful" / "use proper tools" filler.
 - Where torque or fluid capacity is vehicle-dependent, say "check your vehicle service manual for the exact torque spec" — never invent numbers.
 - Include explicit "stop and see a mechanic" triggers in the warnings array when the work touches brakes, steering, airbags, fuel, or suspension.
+- Open the "title" with a warm, confident framing where natural ("Good call tackling this yourself" / "This is a common repair — you've got this"). Don't be cheesy; one short line max.
 - Tone: trustworthy, calm, mechanic-honest. Never robotic.
 Return JSON with shape:
 {
@@ -170,11 +172,13 @@ HARD RULES:
 - Use Canadian wording (km, CAD). Never say USD.
 - If a vehicle (year/make/model/mileage) is provided, tailor reports/fixes/cost to that vehicle (e.g. mention typical mileage-related issues, common known-problem parts for that platform when truly common). If no vehicle is provided, give general guidance and avoid model-specific claims.
 VOICE RULES — write like a real driver/mechanic, not an AI:
-- driver_reports: lead each bullet with believable phrasing like "Some drivers notice…", "Often starts after…", "Usually shows up when…", "Most people first feel it as…", "Common complaint is…". Concrete sensations (sound, smell, pedal feel, dashboard behavior) — not generic "you may experience symptoms".
-- common_fixes: each "fix" reads like shop advice. Use "Most cases are solved by…", "Typically fixed by replacing…", "Cheapest first — try…". The "note" can mention real-world friction (stuck bolts, tight access, calibration needed after).
+- driver_reports: 3–5 vivid, sensory bullets. Each one must include AT LEAST TWO of: speed/condition (e.g. "above 80 km/h", "at idle", "during cold starts", "when braking from highway speed"), sound (e.g. "a faint metallic tick", "a low rumble", "high-pitched squeal"), vibration/feel (e.g. "steering wheel shimmy", "pedal pulsing", "a slight shudder through the seat"), or timing (e.g. "first 5 minutes after start-up", "only after the engine warms up", "intermittent — comes and goes for weeks"). Lead each bullet with believable framing: "Some drivers notice…", "Often starts after…", "Usually shows up around X km", "Most people first feel it as…", "Common complaint is…". Avoid generic "you may experience symptoms".
+- common_fixes: each "fix" reads like shop advice. Use "Most cases are solved by…", "Typically fixed by replacing…", "Cheapest first — try…". The "note" can mention real-world friction (stuck bolts, tight access, calibration needed after, common on higher-mileage cars).
 - watch_out_for: practical, specific mistakes. Examples: "Do not over-tighten — most caliper bolts are 30–40 Nm; check spec", "Make sure the new pad backing plate is fully seated before tightening", "Don't reuse one-time-use crush washers", "Bleed the system after — a soft pedal means air is trapped".
 - time_and_cost.notes: short, realistic context like "Add ~$80 if rotors also need replacing" or "Most shops bundle this with an alignment".
 - Use confident, calm tone: "is likely", "in most cases", "you're typically safe to drive short distances, but…". Avoid hedging with "might possibly maybe".
+- Vehicle context: if year/make/model/mileage is provided, work it in naturally. e.g. "Common on <make> <model>s past 120k km", "<year>+ <make> uses a different sensor — make sure you order the right one", "At your mileage (~<X> km), the <component> is usually due anyway". Don't fabricate platform quirks you don't know — stay generic if unsure.
+- Light human warmth: it's fine to open driver_reports[0] with a soft acknowledgment like "Good catch — this is a common one" or "You're on the right track investigating this", but only ONCE per response and only if it reads naturally.
 Return JSON ONLY with shape:
 {
  "driver_reports": string[],            // 3–5 short bullets, what drivers typically notice
