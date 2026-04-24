@@ -250,6 +250,10 @@ export interface RepairGuideMeta {
   videos: { title: string; channel: string; summary: string; duration: string }[];
   /** Estimated time range for the whole repair. */
   time_estimate: string;
+  /** "When to stop and see a mechanic" — clear escalation triggers. 2–4 bullets. */
+  when_to_stop: string[];
+  /** Torque / spec note — vehicle-dependent reminder. */
+  torque_note?: string;
 }
 
 export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
