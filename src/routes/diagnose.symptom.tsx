@@ -14,6 +14,8 @@ import { callAi } from "@/lib/ai";
 import { severityClass } from "@/lib/severity";
 import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
+import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 
 export const Route = createFileRoute("/diagnose/symptom")({
   component: SymptomChecker,
