@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,17 +8,48 @@ import { Badge } from "@/components/ui/badge";
 import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-result";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
-import { CLEANING_GUIDES, getCleaningGuide, type CleaningAreaId } from "@/lib/cleaning-guides";
+import {
+  CLEANING_GUIDES,
+  getCleaningGuide,
+  matchCleaningArea,
+  type CleaningAreaId,
+} from "@/lib/cleaning-guides";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
-import { Sparkles, Camera, Loader2, RotateCcw, RefreshCw, Upload, ShieldAlert } from "lucide-react";
+import {
+  Sparkles,
+  Camera,
+  Loader2,
+  RotateCcw,
+  RefreshCw,
+  Upload,
+  ShieldAlert,
+  ShieldCheck,
+  Ban,
+} from "lucide-react";
 import { toast } from "sonner";
 
+const searchSchema = z.object({
+  area: z.string().optional(),
+  issue: z.string().optional(),
+});
+
 export const Route = createFileRoute("/cleaning")({
+  validateSearch: (s) => searchSchema.parse(s),
   component: CleaningPage,
 });
 
 function CleaningPage() {
-  const [selectedArea, setSelectedArea] = useState<CleaningAreaId>("interior");
+  const search = Route.useSearch();
+  const initialArea = useMemo<CleaningAreaId>(
+    () => matchCleaningArea(search.area ?? search.issue) ?? "interior",
+    [search.area, search.issue],
+  );
+  const [selectedArea, setSelectedArea] = useState<CleaningAreaId>(initialArea);
+
+  // If the deep-link param changes after mount, re-sync.
+  useEffect(() => {
+    setSelectedArea(initialArea);
+  }, [initialArea]);
   const [aiBusy, setAiBusy] = useState(false);
   const [analysis, setAnalysis] = useState<AiCameraResult | null>(null);
   const guide = useMemo(() => getCleaningGuide(selectedArea), [selectedArea]);
