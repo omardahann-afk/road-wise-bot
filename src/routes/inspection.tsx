@@ -448,16 +448,19 @@ function SetupScreen({
             {STEPS.map((s, i) => {
               const Icon = s.icon;
               return (
-                <div key={s.id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 p-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Step {i + 1} of {STEPS.length}
+                    </div>
                     <div className="text-sm font-medium">{s.title}</div>
                   </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground">
-                    0{i + 1}
-                  </span>
                 </div>
               );
             })}
@@ -1003,7 +1006,7 @@ function ReportScreen({
             {vehicle.year} {vehicle.make} <span className="text-gradient">{vehicle.model}</span>
           </h1>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <span>{Number(vehicle.mileage).toLocaleString()} mi</span>
+            <span>{Number(vehicle.mileage).toLocaleString()} km</span>
             {vehicle.asking_price && (
               <span>Asking {formatCAD(Number(vehicle.asking_price))}</span>
             )}
