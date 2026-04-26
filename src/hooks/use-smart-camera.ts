@@ -328,6 +328,7 @@ export function useSmartCamera(stepId: string) {
       lastCommitAtRef.current = now;
       setLiveInsights(latestInsightsRef.current);
       setHint(latestHintRef.current);
+      setVisibility(latestVisibilityRef.current);
     }
 
     scheduleFrame();
@@ -354,7 +355,27 @@ export function useSmartCamera(stepId: string) {
         scratch,
       );
       prevPixelsRef.current = sampled.pixels;
-      latestHintRef.current = coachForStep(stepIdRef.current, sampled.stats);
+      const baseHint = coachForStep(stepIdRef.current, sampled.stats);
+
+      // Surface visibility — combine luma stats with edge-strength.
+      const edge = sampleEdgeStrength(scratch);
+      const vis = assessSurfaceVisibility(sampled.stats, edge);
+      latestVisibilityRef.current = vis;
+
+      // If visibility is poor AND base hint is "good" or just framing,
+      // override with low-visibility coaching so the user knows.
+      const lowVisMsg = lowVisibilityCoach(vis);
+      if (lowVisMsg && (baseHint.tone === "good" || baseHint.direction === "center_panel")) {
+        latestHintRef.current = {
+          tone: vis.level === "low" ? "warn" : "good",
+          direction: "improve_lighting",
+          message: lowVisMsg,
+          confidence: 0.8,
+        };
+      } else {
+        latestHintRef.current = baseHint;
+      }
+
       maybeAdjustExposure(sampled.stats, performance.now());
 
       // Reject washed-out / overexposed frames from the smoothing pipeline so
@@ -374,6 +395,7 @@ export function useSmartCamera(stepId: string) {
         stepIdRef.current,
         video.videoWidth,
         video.videoHeight,
+        vis,
       );
     } catch (error) {
       console.error("Camera detect error", error);
@@ -390,16 +412,25 @@ export function useSmartCamera(stepId: string) {
 
     for (const item of insights) {
       const [x, y, w, h] = item.bbox;
-      context.strokeStyle = "rgba(61, 169, 252, 0.95)";
-      context.fillStyle = "rgba(61, 169, 252, 0.12)";
+      const dashed = !!item.lowVisibility;
+      context.setLineDash(dashed ? [8, 6] : []);
+      context.strokeStyle = dashed
+        ? "rgba(250, 204, 21, 0.95)" // warning amber
+        : "rgba(61, 169, 252, 0.95)";
+      context.fillStyle = dashed
+        ? "rgba(250, 204, 21, 0.10)"
+        : "rgba(61, 169, 252, 0.12)";
       context.fillRect(x, y, w, h);
       context.strokeRect(x, y, w, h);
+      context.setLineDash([]);
 
-      const label = `${item.label} ${item.confidencePct}%`;
+      const label = dashed
+        ? `${item.label} ${item.confidencePct}% · low-vis`
+        : `${item.label} ${item.confidencePct}%`;
       const textWidth = context.measureText(label).width + 10;
       context.fillStyle = "rgba(0, 0, 0, 0.78)";
       context.fillRect(x, Math.max(0, y - 24), textWidth, 24);
-      context.fillStyle = "rgba(34, 211, 154, 1)";
+      context.fillStyle = dashed ? "rgba(250, 204, 21, 1)" : "rgba(34, 211, 154, 1)";
       context.fillText(label, x + 5, Math.max(16, y - 7));
     }
   }
