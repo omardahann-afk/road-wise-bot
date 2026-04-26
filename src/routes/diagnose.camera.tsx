@@ -45,6 +45,8 @@ function CameraDiagnose() {
   const [aiResult, setAiResult] = useState<AiCameraResult | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savingReport, setSavingReport] = useState(false);
+  const [manualFindings, setManualFindings] = useState<Finding[]>([]);
+  const [lastVisibility, setLastVisibility] = useState<SurfaceVisibility | null>(null);
   const { user } = useAuth();
 
   const {
