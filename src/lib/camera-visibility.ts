@@ -77,20 +77,20 @@ export function assessSurfaceVisibility(stats: FrameStats, edgeStrength?: number
     level = "low";
     confidenceMultiplier = 0.55;
     reason = paintTone === "dark"
-      ? "Dark paint + low contrast — damage may be hidden"
+      ? "Dark paint can hide dents — please confirm by hand"
       : highReflection
-        ? "Strong reflections — surface details obscured"
-        : "Low-contrast surface — detection less reliable";
+        ? "Reflections are covering the surface — check manually too"
+        : "Low-contrast surface — please confirm any damage by hand";
   } else if (flags === 1) {
     level = "ok";
     confidenceMultiplier = 0.8;
     reason = paintTone === "dark"
-      ? "Dark surface — angle camera to catch light"
+      ? "Dark surface — tilt the camera to catch a light streak"
       : highReflection
-        ? "Reflections may hide blemishes"
+        ? "Bright reflections may hide blemishes — try a new angle"
         : lowContrast
-          ? "Low contrast — try a brighter angle"
-          : "Soft edges — hold steady or move closer";
+          ? "A bit washed-out — move to brighter, even light"
+          : "Soft edges — hold steady or move slightly closer";
   }
 
   return {
@@ -147,19 +147,19 @@ export function sampleEdgeStrength(canvas: HTMLCanvasElement): number {
 export function lowVisibilityCoach(v: SurfaceVisibility): string | null {
   if (v.level === "good") return null;
   if (v.paintTone === "dark" && v.highReflection) {
-    return "Dark + glossy panel — tilt the camera to catch a light streak across the surface.";
+    return "Dark, glossy paint hides damage. Tilt the camera until a light streak runs across the panel — that's when dents show up.";
   }
   if (v.paintTone === "dark") {
-    return "Dark surface detected — angle the camera to catch light reflection across the panel.";
+    return "Dark paint can hide dents. Angle the camera until reflections reveal the panel shape.";
   }
   if (v.highReflection) {
-    return "Strong reflections — change angle or shade the panel from direct sun.";
+    return "Strong reflections are covering the surface. Step to a new angle or shade the panel from direct sun.";
   }
   if (v.lowContrast) {
-    return "Low contrast — move to better lighting so dents and scratches show.";
+    return "The surface looks washed out. Move into brighter, even light so scratches and dents stand out.";
   }
   if (v.weakEdges) {
-    return "Soft edges — hold steady, refocus, or move slightly closer.";
+    return "The image is a bit soft. Hold steady, let it refocus, or move slightly closer.";
   }
-  return "Surface is hard to read — adjust angle and lighting.";
+  return "Hard to read this surface. Try a different angle and better light, then confirm by running your hand across the panel.";
 }
