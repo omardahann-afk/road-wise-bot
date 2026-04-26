@@ -496,6 +496,8 @@ function StepScreen(props: {
   setWarningLightToggles: (fn: (p: Record<string, boolean>) => Record<string, boolean>) => void;
   onFrame: (dataUrl: string) => void; onAi: (ai: AiFrameResult) => void;
   onAddManual: (issue: string, severity: Finding["severity"]) => void;
+  /** Fired when the captured frame was visibly hard to read (dark, glare, low contrast). */
+  onLowVisibilityCapture: (stepId: string) => void;
   findings: Finding[]; allFindings: Finding[]; onRemoveFinding: (idx: number) => void;
   /** issue labels (lowercased) already attached to THIS step — used to dim/lock chips. */
   addedIssues: Set<string>;
@@ -552,6 +554,7 @@ function StepScreen(props: {
           stepId={step.id} category={step.category} frame={props.frame} ai={props.ai}
           onFrame={props.onFrame} onAi={props.onAi} vehicle={props.vehicle}
           onAddCandidate={props.onAddManual}
+          onLowVisibilityCapture={props.onLowVisibilityCapture}
           addedIssues={props.addedIssues}
         />
       )}
@@ -580,12 +583,14 @@ function StepScreen(props: {
 
 /* ============================== Camera capture ============================== */
 function CameraCapture({
-  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate, addedIssues,
+  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate, onLowVisibilityCapture, addedIssues,
 }: {
   stepId: string; category: Finding["category"]; frame: string | null;
   ai: AiFrameResult | null; onFrame: (dataUrl: string) => void;
   onAi: (ai: AiFrameResult) => void; vehicle: VehicleForm;
   onAddCandidate: (issue: string, severity: Finding["severity"]) => void;
+  /** Notify parent when the analyzed frame was hard-to-read. */
+  onLowVisibilityCapture: (stepId: string) => void;
   /** Issue labels already added to this step — used to dim bounding boxes + chips. */
   addedIssues?: Set<string>;
 }) {
