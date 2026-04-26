@@ -7,6 +7,7 @@
 // instead surfaces "candidate" findings the user can confirm with one tap.
 
 import type { Finding } from "@/lib/valuation";
+import type { SurfaceVisibility } from "@/lib/camera-visibility";
 
 export type AutoCategory =
   | "engine_bay"
@@ -58,6 +59,8 @@ export interface InterpretedDetection {
   suggestedSeverity: Finding["severity"];
   /** Short contextual coach prompt for THIS detection. */
   prompt: string;
+  /** True when surface visibility damped this detection. UI uses dashed bbox. */
+  lowVisibility?: boolean;
 }
 
 /* ---------- COCO class → automotive category mapping ---------- */
