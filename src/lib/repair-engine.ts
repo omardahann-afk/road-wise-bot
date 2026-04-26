@@ -434,6 +434,30 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
     ],
     torque_note: "Seat-mount bolts and seat-belt anchors are safety-critical. If you remove either, check your vehicle service manual for exact torque specs before driving.",
   },
+  battery_service: {
+    safety: [
+      "Disconnect the NEGATIVE (−) terminal first and the POSITIVE (+) last to avoid shorting a wrench across the chassis.",
+      "Wear safety glasses and remove rings/watches — a slipped wrench across the positive post can flash-weld and burn.",
+      "If the battery case is cracked, swollen, or leaking acid, use gloves, neutralize spills with baking soda + water, and ventilate the area.",
+    ],
+    tools: ["Multimeter", "10mm socket + ratchet", "Long-reach 10mm socket and extension", "Trim removal tool", "Battery terminal cleaner / wire brush", "Penetrating oil"],
+    watch_out: [
+      "Reversing terminal order on reconnect (negative first, positive last) sparks at chassis ground — always positive-first to reconnect.",
+      "Forcing rusted hold-down bolts shears the head off — soak with penetrating oil and use a long-reach socket.",
+      "Skipping the charging-system check (13.8–14.6V at idle) — a bad alternator will cook your new battery in days.",
+    ],
+    videos: [
+      { title: "Battery test before replacement", channel: "Common patterns (AI summary)", summary: "Walks through resting voltage and load testing so you don't replace a healthy battery. 5–10 minutes with a basic multimeter.", duration: "5–7 min" },
+      { title: "Wheel-well battery access (Chrysler/Dodge platforms)", channel: "Common patterns (AI summary)", summary: "Shows turning the wheel, popping fender liner clips, and reaching the battery with a long extension. Beginner-friendly once you've seen it once.", duration: "8–10 min" },
+    ],
+    time_estimate: "30–60 min (add 30 min if hold-down bolts are seized)",
+    when_to_stop: [
+      "Hold-down bolt has snapped or rounded off and you don't have an extractor — a shop can pull it without chewing the tray.",
+      "Charging voltage stays above 15V or below 13.5V at idle after install — alternator/regulator issue, not a DIY guess.",
+      "Battery case is cracked, swollen, or vented acid into the tray — neutralize, glove up, and consider professional handling.",
+    ],
+    torque_note: "Battery hold-down hardware torque is light — typically 60–100 in-lb (7–11 Nm). Do not gorilla it; over-tightening cracks the case. Terminal clamp bolts: snug + ¼ turn, never crush the post.",
+  },
   general_repair: {
     safety: [
       "Always disconnect the battery negative terminal before electrical work.",
