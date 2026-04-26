@@ -125,7 +125,11 @@ function CameraDiagnose() {
         .insert({
           user_id: user.id,
           mode: "camera",
-          input: { detected_objects: [] },
+          input: {
+            detected_objects: [],
+            manual_findings: manualFindings,
+            surface_visibility: lastVisibility ?? null,
+          },
           ai_output: result as never,
           summary: result.summary,
         })
