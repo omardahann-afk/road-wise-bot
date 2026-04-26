@@ -370,10 +370,12 @@ function InspectionFlow() {
           ai={aiFinal}
           submitting={submitting}
           inspectionId={savedInspectionId}
+          lowVisSteps={lowVisSteps}
           onRestart={() => {
             setPhase("setup"); setStepIdx(0); setFindings([]); setStepFrames({}); setAiByStep({});
             setManualNotes({}); setScores(null); setValuation(null); setRepairBurden(null);
             setBurdenCAD(null); setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
+            setLowVisSteps(new Set());
           }}
         />
       )}
