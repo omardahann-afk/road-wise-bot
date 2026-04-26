@@ -455,6 +455,7 @@ export function useSmartCamera(stepId: string) {
         class: item.class,
         score: item.score,
       })),
+      visibility: latestVisibilityRef.current,
     };
   }
 
@@ -473,6 +474,7 @@ export function useSmartCamera(stepId: string) {
         class: item.class,
         score: item.score,
       })),
+      visibility: latestVisibilityRef.current,
     };
   }
 
@@ -496,6 +498,7 @@ export function useSmartCamera(stepId: string) {
     facing,
     hint,
     liveInsights,
+    visibility,
     capturedPreview,
     startStream,
     stopStream,
