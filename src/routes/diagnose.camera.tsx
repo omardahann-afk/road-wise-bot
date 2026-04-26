@@ -7,11 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-result";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
+import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { recordLearningEvent } from "@/lib/learning";
 import type { SurfaceVisibility } from "@/lib/camera-visibility";
+import type { Finding } from "@/lib/valuation";
+import { Trash2 } from "lucide-react";
 import {
   Camera,
   RotateCcw,
