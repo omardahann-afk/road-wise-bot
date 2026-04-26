@@ -170,8 +170,40 @@ function CameraDiagnose() {
   function handleRetake() {
     setAiResult(null);
     setSavedId(null);
+    setManualFindings([]);
+    setLastVisibility(null);
     clearCapturedPreview();
     if (!streaming) void startStream();
+  }
+
+  function handleManualMark(label: string, severity: Finding["severity"]) {
+    const key = label.toLowerCase();
+    if (manualFindings.some((f) => f.issue.toLowerCase() === key)) {
+      toast.info("Already marked");
+      return;
+    }
+    const finding: Finding = {
+      step: "diagnose_camera",
+      category: "exterior",
+      issue: label,
+      severity,
+      notes: "Manually marked during camera diagnose",
+    };
+    setManualFindings((prev) => [...prev, finding]);
+    toast.success(`Marked: ${label}`);
+    void recordLearningEvent({
+      step_id: "diagnose_camera",
+      paint_tone: lastVisibility?.paintTone ?? null,
+      surface_visibility: lastVisibility?.level ?? null,
+      issue_detected: label,
+      issue_confirmed_by_user: true,
+      source: "manual_mark",
+      metadata: { severity, route: "/diagnose/camera" },
+    });
+  }
+
+  function removeManualMark(idx: number) {
+    setManualFindings((prev) => prev.filter((_, i) => i !== idx));
   }
 
   return (
