@@ -129,7 +129,7 @@ function CameraDiagnose() {
             detected_objects: [],
             manual_findings: manualFindings,
             surface_visibility: lastVisibility ?? null,
-          },
+          } as never,
           ai_output: result as never,
           summary: result.summary,
         })
