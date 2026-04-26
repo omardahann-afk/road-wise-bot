@@ -358,6 +358,7 @@ const WORKFLOW_LABEL: Record<RepairWorkflow, string> = {
   fluid_leak: "Fluid Leak Repair",
   warning_light_diagnostic: "Warning Light Diagnostic",
   interior_repair: "Interior Repair",
+  battery_service: "Battery Replacement",
   general_repair: "General Repair",
 };
 
