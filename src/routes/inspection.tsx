@@ -663,55 +663,81 @@ function CameraCapture({
         const preds = await model.detect(v);
         const lite = preds.map((p) => ({ class: p.class, score: p.score, bbox: p.bbox as [number,number,number,number] }));
         setLastDetections(lite);
+
+        // Visibility & coaching first — they damp confidence in interpretation.
+        let vis: SurfaceVisibility | null = null;
+        if (scratchRef.current) {
+          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
+          prevPixelsRef.current = pixels;
+          const edge = sampleEdgeStrength(scratchRef.current);
+          vis = assessSurfaceVisibility(stats, edge);
+          setVisibility(vis);
+          const baseHint = coachForStep(stepId, stats);
+          const lowVisMsg = lowVisibilityCoach(vis);
+          if (lowVisMsg && (baseHint.tone === "good" || baseHint.direction === "center_panel")) {
+            setCoach({
+              tone: vis.level === "low" ? "warn" : "good",
+              direction: "improve_lighting",
+              message: lowVisMsg,
+              confidence: 0.8,
+            });
+          } else {
+            setCoach(baseHint);
+          }
+        }
+
         const ctx = overlay.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
           ctx.lineWidth = 3;
           ctx.font = "16px sans-serif";
           // Use interpreted automotive labels + confidence-based tone for the boxes
-          const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight);
+          const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight, vis);
           interpretedNow.forEach((p) => {
             const [x, y, w, h] = p.bbox;
             const issueKey = surfaceIssueLabel(p.suggestedIssue).toLowerCase();
             const isAdded = !!issueKey && addedIssuesRef.current.has(issueKey);
+            const dashed = !!p.lowVisibility && !isAdded;
             // Already-added detections render in a muted/locked style so the
             // user gets instant feedback that the box is captured.
             const stroke = isAdded
               ? "rgba(148,163,184,0.85)" // slate-400 — locked
-              : p.confidence === "high"
-                ? "rgba(74,222,128,0.95)"   // success green
-                : p.confidence === "medium"
-                  ? "rgba(96,165,250,0.95)" // primary blue
-                  : "rgba(250,204,21,0.95)"; // warning amber
+              : dashed
+                ? "rgba(250,204,21,0.95)" // warning amber for low-vis
+                : p.confidence === "high"
+                  ? "rgba(74,222,128,0.95)"   // success green
+                  : p.confidence === "medium"
+                    ? "rgba(96,165,250,0.95)" // primary blue
+                    : "rgba(250,204,21,0.95)"; // warning amber
             const fill = isAdded
               ? "rgba(148,163,184,0.10)"
-              : p.confidence === "high"
-                ? "rgba(74,222,128,0.16)"
-                : p.confidence === "medium"
-                  ? "rgba(96,165,250,0.16)"
-                  : "rgba(250,204,21,0.16)";
+              : dashed
+                ? "rgba(250,204,21,0.10)"
+                : p.confidence === "high"
+                  ? "rgba(74,222,128,0.16)"
+                  : p.confidence === "medium"
+                    ? "rgba(96,165,250,0.16)"
+                    : "rgba(250,204,21,0.16)";
+            ctx.setLineDash(dashed ? [8, 6] : []);
             ctx.strokeStyle = stroke;
             ctx.fillStyle = fill;
             ctx.fillRect(x, y, w, h);
             ctx.strokeRect(x, y, w, h);
+            ctx.setLineDash([]);
             const label = isAdded
               ? `✓ Added · ${p.label}`
-              : `${p.label} · ${p.confidencePct}% (${p.confidence})`;
+              : dashed
+                ? `${p.label} · ${p.confidencePct}% · low-vis`
+                : `${p.label} · ${p.confidencePct}% (${p.confidence})`;
             const tw = ctx.measureText(label).width + 10;
             ctx.fillStyle = "rgba(0,0,0,0.78)";
             ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
             ctx.fillStyle = stroke;
             ctx.fillText(label, x + 5, Math.max(14, y - 6));
           });
+          // Camera intelligence: interpret detections in automotive terms
+          setInterpreted(interpretedNow);
         }
-        // Coaching: deterministic frame analysis
-        if (scratchRef.current) {
-          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
-          prevPixelsRef.current = pixels;
-          setCoach(coachForStep(stepId, stats));
-        }
-        // Camera intelligence: interpret detections in automotive terms
-        setInterpreted(interpretDetections(lite, stepId, v.videoWidth, v.videoHeight));
       } catch (e) { console.error(e); }
     }
     rafRef.current = requestAnimationFrame(detectLoop);
