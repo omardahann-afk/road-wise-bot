@@ -271,7 +271,7 @@ function InspectionFlow() {
             } as never,
             asking_price: askingPrice,
             findings: allFindings as never,
-            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd } as never,
+            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd, low_visibility_steps: Array.from(lowVisSteps) } as never,
             recommendation: fd.decision,
             notes: ai.summary,
           })
