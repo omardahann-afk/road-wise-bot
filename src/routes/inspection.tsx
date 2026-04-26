@@ -122,6 +122,9 @@ function InspectionFlow() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [stepFrames, setStepFrames] = useState<Record<string, string | null>>({});
   const [aiByStep, setAiByStep] = useState<Record<string, AiFrameResult | null>>({});
+  // Step IDs whose capture frame was flagged low-visibility (dark paint, glare,
+  // low contrast). Drives the report-level "harder to detect" caveat.
+  const [lowVisSteps, setLowVisSteps] = useState<Set<string>>(new Set());
   const [manualNotes, setManualNotes] = useState<Record<string, string>>({});
   const [warningLightToggles, setWarningLightToggles] = useState<Record<string, boolean>>({
     check_engine: false, abs: false, airbag: false, oil: false, battery: false,
@@ -268,7 +271,7 @@ function InspectionFlow() {
             } as never,
             asking_price: askingPrice,
             findings: allFindings as never,
-            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd } as never,
+            scores: { ...computedScores, repair_burden: burden, burden_cad: burdenCad, final_decision: fd, low_visibility_steps: Array.from(lowVisSteps) } as never,
             recommendation: fd.decision,
             notes: ai.summary,
           })
@@ -331,6 +334,14 @@ function InspectionFlow() {
           onFrame={(dataUrl) => setStepFrames((p) => ({ ...p, [currentStep.id]: dataUrl }))}
           onAi={(ai) => recordFrameFindings(currentStep.id, ai)}
           onAddManual={(issue, severity) => recordManualFinding(currentStep.id, currentStep.category, issue, severity)}
+          onLowVisibilityCapture={(stepId) =>
+            setLowVisSteps((prev) => {
+              if (prev.has(stepId)) return prev;
+              const next = new Set(prev);
+              next.add(stepId);
+              return next;
+            })
+          }
           findings={findings.filter((f) => f.step === currentStep.id)}
           allFindings={findings}
           addedIssues={
@@ -359,10 +370,12 @@ function InspectionFlow() {
           ai={aiFinal}
           submitting={submitting}
           inspectionId={savedInspectionId}
+          lowVisSteps={lowVisSteps}
           onRestart={() => {
             setPhase("setup"); setStepIdx(0); setFindings([]); setStepFrames({}); setAiByStep({});
             setManualNotes({}); setScores(null); setValuation(null); setRepairBurden(null);
             setBurdenCAD(null); setFinalDecision(null); setAiFinal(null); setSavedInspectionId(null);
+            setLowVisSteps(new Set());
           }}
         />
       )}
@@ -485,6 +498,8 @@ function StepScreen(props: {
   setWarningLightToggles: (fn: (p: Record<string, boolean>) => Record<string, boolean>) => void;
   onFrame: (dataUrl: string) => void; onAi: (ai: AiFrameResult) => void;
   onAddManual: (issue: string, severity: Finding["severity"]) => void;
+  /** Fired when the captured frame was visibly hard to read (dark, glare, low contrast). */
+  onLowVisibilityCapture: (stepId: string) => void;
   findings: Finding[]; allFindings: Finding[]; onRemoveFinding: (idx: number) => void;
   /** issue labels (lowercased) already attached to THIS step — used to dim/lock chips. */
   addedIssues: Set<string>;
@@ -541,6 +556,7 @@ function StepScreen(props: {
           stepId={step.id} category={step.category} frame={props.frame} ai={props.ai}
           onFrame={props.onFrame} onAi={props.onAi} vehicle={props.vehicle}
           onAddCandidate={props.onAddManual}
+          onLowVisibilityCapture={props.onLowVisibilityCapture}
           addedIssues={props.addedIssues}
         />
       )}
@@ -569,12 +585,14 @@ function StepScreen(props: {
 
 /* ============================== Camera capture ============================== */
 function CameraCapture({
-  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate, addedIssues,
+  stepId, category, frame, ai, onFrame, onAi, vehicle, onAddCandidate, onLowVisibilityCapture, addedIssues,
 }: {
   stepId: string; category: Finding["category"]; frame: string | null;
   ai: AiFrameResult | null; onFrame: (dataUrl: string) => void;
   onAi: (ai: AiFrameResult) => void; vehicle: VehicleForm;
   onAddCandidate: (issue: string, severity: Finding["severity"]) => void;
+  /** Notify parent when the analyzed frame was hard-to-read. */
+  onLowVisibilityCapture: (stepId: string) => void;
   /** Issue labels already added to this step — used to dim bounding boxes + chips. */
   addedIssues?: Set<string>;
 }) {
@@ -750,6 +768,12 @@ function CameraCapture({
     c.getContext("2d")?.drawImage(v, 0, 0);
     const dataUrl = c.toDataURL("image/jpeg", 0.7);
     onFrame(dataUrl);
+    // Capture-time visibility snapshot — used to flag this step in the report
+    // even if guidance shifted before the network round-trip returns.
+    const captureVisibility = visibility;
+    if (captureVisibility?.level === "low") {
+      onLowVisibilityCapture(stepId);
+    }
     setAnalyzing(true);
     try {
       const result = await callAi<AiFrameResult>(
@@ -758,20 +782,43 @@ function CameraCapture({
           step: stepId,
           category,
           detected_objects: lastDetections,
-          surface_visibility: visibility,
+          surface_visibility: captureVisibility,
         },
         { year: Number(vehicle.year) || null, make: vehicle.make, model: vehicle.model, mileage: Number(vehicle.mileage) || null },
       );
-      onAi(result);
+      // No-false-confidence guard: if the surface was hard to read AND the AI
+      // returned zero findings, override the step summary so we never silently
+      // imply "all clear" on a panel we couldn't see properly.
+      const safeResult: AiFrameResult =
+        captureVisibility?.level === "low" && (result.findings?.length ?? 0) === 0
+          ? {
+              ...result,
+              step_summary:
+                "Surface was hard to read here (dark paint, reflections, or low light). The camera can't confirm the panel is damage-free — please run your hand across it and recheck in better light.",
+              what_to_check_manually: Array.from(
+                new Set([
+                  ...(result.what_to_check_manually ?? []),
+                  "Run your hand slowly across the panel — fingertips catch dents the camera can miss.",
+                  "Re-shoot from a new angle so a light streak runs across the surface.",
+                  "Check the lower body and edges where rust and dings hide.",
+                ]),
+              ),
+            }
+          : result;
+      onAi(safeResult);
       // Learning signal — what we tried to detect under what conditions.
       void recordLearningEvent({
         step_id: stepId,
-        paint_tone: visibility?.paintTone ?? null,
-        surface_visibility: visibility?.level ?? null,
+        paint_tone: captureVisibility?.paintTone ?? null,
+        surface_visibility: captureVisibility?.level ?? null,
         detection_confidence: interpreted[0]?.score ?? null,
-        issue_detected: result.findings?.[0]?.issue ?? null,
+        issue_detected: safeResult.findings?.[0]?.issue ?? null,
         source: "ai_finding",
-        metadata: { findings_count: result.findings?.length ?? 0 },
+        metadata: {
+          findings_count: safeResult.findings?.length ?? 0,
+          low_visibility_guard_applied:
+            captureVisibility?.level === "low" && (result.findings?.length ?? 0) === 0,
+        },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI analysis failed");
@@ -1041,12 +1088,15 @@ function FindingsList({ findings, onRemove }: { findings: Finding[]; onRemove: (
 
 /* ============================== Report screen ============================== */
 function ReportScreen({
-  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, onRestart,
+  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, lowVisSteps, onRestart,
 }: {
   vehicle: VehicleForm; findings: Finding[]; scores: InspectionScores;
   valuation: ValuationOutput; repairBurden: RepairCostEstimate; burdenCAD: BurdenResult | null;
   finalDecision: FinalDecision; ai: AiFinalResult | null; submitting: boolean;
-  inspectionId: string | null; onRestart: () => void;
+  inspectionId: string | null;
+  /** Step IDs whose capture frame was visibly hard to read. */
+  lowVisSteps: Set<string>;
+  onRestart: () => void;
 }) {
   const decision = finalDecision.decision;
   const decisionMeta = {
@@ -1096,6 +1146,27 @@ function ReportScreen({
           </div>
         </CardContent>
       </Card>
+
+      {/* Low-visibility caveat — appears when one or more capture frames were
+          flagged as hard-to-read (dark paint, glare, low contrast). */}
+      {lowVisSteps.size > 0 && (
+        <Card className="mb-4 border-warning/40 bg-warning/5">
+          <CardContent className="p-4">
+            <div className="mb-1.5 flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-4 w-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">Inspection caveat</h3>
+            </div>
+            <p className="text-sm leading-relaxed">
+              Some damage may be harder to detect due to dark paint, reflections, or poor lighting.
+              The camera flagged {lowVisSteps.size === 1 ? "1 step" : `${lowVisSteps.size} steps`}{" "}
+              ({Array.from(lowVisSteps)
+                .map((id) => STEPS.find((s) => s.id === id)?.title ?? id)
+                .join(", ")}) as low-visibility — please run your hand across those panels and
+              re-check in better light before relying on this report alone.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Decision Trust block — confidence + signals + risks/positives/unknowns */}
       <DecisionTrustBlock

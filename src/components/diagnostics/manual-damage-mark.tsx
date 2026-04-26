@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import type { Finding } from "@/lib/valuation";
 
 const MANUAL_OPTIONS: { label: string; severity: Finding["severity"] }[] = [
-  { label: "Dent (manual)", severity: "low" },
-  { label: "Scratch (manual)", severity: "low" },
-  { label: "Rust spot (manual)", severity: "medium" },
-  { label: "Paint mismatch (manual)", severity: "low" },
+  { label: "Dent (you spotted it)", severity: "low" },
+  { label: "Scratch (you spotted it)", severity: "low" },
+  { label: "Rust spot (you spotted it)", severity: "medium" },
+  { label: "Paint mismatch (you spotted it)", severity: "low" },
 ];
 
 /**
@@ -34,9 +34,9 @@ export function ManualDamageMark({
           <ScanEye className="h-4 w-4" />
         </span>
         <span className="flex-1 text-xs">
-          <span className="block font-bold">Did the camera miss damage?</span>
+          <span className="block font-bold">See something the camera missed?</span>
           <span className="block text-[10px] text-muted-foreground">
-            {hint ?? "Tap to mark a dent, scratch, or rust spot the system didn't catch."}
+            {hint ?? "Tap to add a dent, scratch, rust spot, or paint mismatch you can see in person."}
           </span>
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider text-warning">
