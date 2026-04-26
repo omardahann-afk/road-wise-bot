@@ -27,6 +27,7 @@ import {
   Sun,
   Hand,
   Search,
+  ScanEye,
 } from "lucide-react";
 import { toast } from "sonner";
 
