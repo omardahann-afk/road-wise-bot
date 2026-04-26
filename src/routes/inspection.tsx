@@ -57,6 +57,10 @@ import { DetectionChips } from "@/components/diagnostics/detection-chips";
 import { computeDecisionTrust } from "@/lib/decision-trust";
 import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
+import { assessSurfaceVisibility, sampleEdgeStrength, lowVisibilityCoach, type SurfaceVisibility } from "@/lib/camera-visibility";
+import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
+import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
+import { recordLearningEvent } from "@/lib/learning";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
