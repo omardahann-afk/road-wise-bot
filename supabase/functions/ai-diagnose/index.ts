@@ -33,7 +33,8 @@ interface Body {
     | "repair_steps"
     | "inspection_frame"
     | "inspection_final"
-    | "insights";
+    | "insights"
+    | "workflow_create";
   payload: Record<string, unknown>;
   vehicle?: Record<string, unknown> | null;
   knowledge?: unknown;
@@ -238,6 +239,54 @@ Return JSON ONLY with shape:
  },
  "source_label": "Common patterns (AI summary)",
  "low_confidence": boolean
+}
+Context: ${JSON.stringify(ctx)}`;
+    case "workflow_create":
+      return `Task: Generate a structured, safe, mechanic-grade WORKFLOW for the issue described in the input. This will be rendered into an interactive step-by-step guide. Output is consumed by code — JSON ONLY, no prose.
+
+WORKFLOW SCOPE: ${(payload as { workflow_kind?: string }).workflow_kind ?? "repair"} (one of: repair | inspection | maintenance | cleaning).
+
+NON-NEGOTIABLE SAFETY RULES:
+- For ANY work touching brakes, airbags/SRS, fuel, high-voltage hybrid/EV, steering, suspension, structural rust, or severe electrical: set "mechanic_recommended": true and add explicit "stop and see a mechanic" triggers in safety_warnings.
+- Never claim "no safety risk" — every workflow must include at least one general safety reminder (eye protection, jack stands, battery disconnect for electrical, ventilation, etc.).
+- For uncertain or ambiguous steps, set the step's "warning" to clearly mark uncertainty (e.g. "If the bolt feels gritty, stop — cross-threading risk").
+- DO NOT invent torque specs, fluid capacities, or part numbers. If vehicle-dependent, say "check your vehicle service manual".
+- DO NOT include pricing numbers — pricing is computed deterministically by the app. You may write a 1-line "estimated_cost_note" describing what drives the cost (parts vs labour, complexity).
+
+REAL-WORLD INSIGHTS: The input may include a "real_world_insights" array (driver reports, common fixes, common mistakes). When present, weave 2–4 of the most useful into "real_world_tips" and into individual step "why_it_matters" or "warning" fields. Use phrasing like "Users on this platform commonly report…", "Often the <fastener> is rusted — apply penetrating oil first", "Many DIYers wish they had <tool> on hand — worth grabbing before you start".
+
+CAMERA / INSPECTION FINDINGS: If the input includes "camera_findings" or "inspection_findings", reference them in the workflow title, vehicle_context, or relevant steps so the user sees the link between what was detected and what they're doing.
+
+USER SKILL LEVEL: Tailor instructions to "user_skill" (beginner | intermediate | advanced). For beginner: more landmarks, more "what failure looks like" cues, more reassurance. For advanced: terser, assume tool familiarity.
+
+STEPS: 4–10 steps depending on complexity. Each step is one focused unit of work. Each step's "instruction" is 2–4 short sentences with concrete actions and where the part lives. "why_it_matters" is one sentence on consequence of doing it wrong. "completion_check" is a one-line observable success criterion ("Coolant fills the reservoir to MAX cold line and no bubbles for 30 seconds at idle").
+
+Return JSON ONLY with this exact shape:
+{
+ "title": string,
+ "issue_type": string,
+ "vehicle_context": string,
+ "difficulty": "beginner"|"intermediate"|"advanced",
+ "estimated_time": string,
+ "estimated_cost_note": string,
+ "diy_possible": boolean,
+ "mechanic_recommended": boolean,
+ "tools_required": string[],
+ "parts_required": string[],
+ "safety_warnings": string[],
+ "real_world_tips": string[],
+ "uncertain_steps": number[],
+ "steps": [
+   {
+     "step_number": number,
+     "title": string,
+     "instruction": string,
+     "why_it_matters": string,
+     "tools_needed": string[],
+     "warning": string|null,
+     "completion_check": string
+   }
+ ]
 }
 Context: ${JSON.stringify(ctx)}`;
   }

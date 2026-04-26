@@ -8,7 +8,8 @@ export type AiTask =
   | "repair_steps"
   | "inspection_frame"
   | "inspection_final"
-  | "insights";
+  | "insights"
+  | "workflow_create";
 
 export async function callAi<T = unknown>(
   task: AiTask,

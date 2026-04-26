@@ -37,6 +37,9 @@ import {
   WhenToStopSection,
   TorqueNoteSection,
 } from "@/components/repair/repair-guide-sections";
+import { AiWorkflowGenerator } from "@/components/repair/ai-workflow-generator";
+import { WorkflowFeedbackDialog } from "@/components/repair/workflow-feedback";
+import { workflowToEngineSteps, type GeneratedWorkflow, type BuildWorkflowInput } from "@/lib/workflow-builder";
 
 // Maps repair workflow → pricing IssueType (deterministic).
 const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
@@ -195,6 +198,8 @@ function RepairWorkflowDetail(props: {
   const meta = useMemo(() => WORKFLOWS.find((w) => w.id === props.workflowId)!, [props.workflowId]);
   const [ai, setAi] = useState<AiRepair | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generatedWorkflow, setGeneratedWorkflow] = useState<GeneratedWorkflow | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const Icon = meta.icon;
 
   async function generateGuide() {
@@ -230,10 +235,25 @@ function RepairWorkflowDetail(props: {
   }
 
   const guideMeta = GUIDE_META[props.workflowId];
-  const engineSteps = normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]);
+  // Prefer the AutoSage Brain generated workflow when present; fall back to
+  // the older AI-tailored steps; finally to deterministic FALLBACK_STEPS.
+  const engineSteps = generatedWorkflow
+    ? workflowToEngineSteps(generatedWorkflow)
+    : normalizeAiSteps(ai?.steps, FALLBACK_STEPS[props.workflowId]);
   const issue = WORKFLOW_TO_ISSUE[props.workflowId];
   const sev: Severity = props.severity ?? "medium";
   const pricing = estimateRepairCost({ issue_type: issue, severity: sev, region: "canada" });
+
+  // Build the input for the AutoSage Brain workflow generator. Real-world
+  // insights are intentionally omitted here — the existing RealWorldInsights
+  // card already drives those, and we keep prompt size small.
+  const builderInput: BuildWorkflowInput = {
+    workflow: props.workflowId,
+    kind: "repair",
+    issue: props.issue,
+    severity: sev,
+    user_skill: "intermediate",
+  };
 
   // Combine deterministic safety with any AI-generated warnings, de-duped.
   const safetyItems = Array.from(
@@ -344,6 +364,15 @@ function RepairWorkflowDetail(props: {
           </CardContent>
         </Card>
 
+        {/* 4b. AUTOSAGE BRAIN — structured workflow generator (AI + safety + pricing) */}
+        {props.userId && (
+          <AiWorkflowGenerator
+            input={builderInput}
+            userId={props.userId}
+            onWorkflowReady={setGeneratedWorkflow}
+          />
+        )}
+
         {/* 5. STEPS — full engine for signed-in users, preview + lock for guests */}
         {props.userId ? (
           <StepEngine
@@ -351,11 +380,22 @@ function RepairWorkflowDetail(props: {
             issue={props.issue}
             steps={engineSteps}
             userId={props.userId}
+            onAllComplete={() => generatedWorkflow && setFeedbackOpen(true)}
           />
         ) : (
           <GuestStepPreview
             previewStep={engineSteps[0]}
             totalSteps={engineSteps.length}
+          />
+        )}
+
+        {/* Feedback dialog — opens when a generated workflow is fully completed */}
+        {props.userId && generatedWorkflow && (
+          <WorkflowFeedbackDialog
+            open={feedbackOpen}
+            onOpenChange={setFeedbackOpen}
+            workflow={generatedWorkflow}
+            userId={props.userId}
           />
         )}
 
