@@ -1,4 +1,5 @@
 import { callAi } from "@/lib/ai";
+import type { SurfaceVisibility } from "@/lib/camera-visibility";
 
 export interface CleaningAdvice {
   /** Material(s) detected (e.g. "leather seat", "alloy wheel"). */
