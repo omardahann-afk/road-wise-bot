@@ -150,6 +150,13 @@ function WorkflowPreview({ workflow }: { workflow: GeneratedWorkflow }) {
         <p className="mt-0.5 text-[11px] text-muted-foreground">{workflow.vehicle_context}</p>
       </div>
 
+      {workflow.source === "fallback" && workflow.fallback_reason && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning-foreground">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+          <span>{workflow.fallback_reason}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2 text-[10px]">
         <Stat icon={<Clock className="h-3 w-3" />} label="Time" value={workflow.estimated_time} />
         <Stat icon={<Wrench className="h-3 w-3" />} label="Difficulty" value={workflow.difficulty} />
@@ -158,6 +165,15 @@ function WorkflowPreview({ workflow }: { workflow: GeneratedWorkflow }) {
           label="Cost (CAD)"
           value={workflowPricingSummary(workflow).split(" (")[0]}
         />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className="border-success/40 bg-success/10 text-[10px] text-success">
+          Pricing engine
+        </Badge>
+        <span className="text-[10px] text-muted-foreground">
+          Costs are deterministic — never AI-generated.
+        </span>
       </div>
 
       {workflow.mechanic_recommended && (
@@ -188,6 +204,19 @@ function WorkflowPreview({ workflow }: { workflow: GeneratedWorkflow }) {
           <ul className="space-y-1 text-[11px]">
             {workflow.real_world_tips.slice(0, 3).map((t, i) => (
               <li key={i} className="flex gap-1.5"><span>•</span><span>{t}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {workflow.parts_required.length > 0 && (
+        <div>
+          <h5 className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <Wrench className="h-3 w-3" /> Parts you'll need
+          </h5>
+          <ul className="space-y-1 text-[11px]">
+            {workflow.parts_required.slice(0, 6).map((p, i) => (
+              <li key={i} className="flex gap-1.5"><span>•</span><span>{p}</span></li>
             ))}
           </ul>
         </div>

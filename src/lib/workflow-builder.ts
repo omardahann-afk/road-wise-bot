@@ -335,11 +335,14 @@ export async function buildWorkflow(input: BuildWorkflowInput): Promise<Generate
     );
   } catch (err) {
     console.warn("[workflow-builder] AI call failed, using fallback:", err);
-    return fallbackWorkflow(input, pricing);
+    const reason = err instanceof Error && /402|credit|quota|rate/i.test(err.message)
+      ? "AI credits unavailable — showing the deterministic default workflow."
+      : "AutoSage Brain couldn't reach the AI service — showing the deterministic default workflow.";
+    return fallbackWorkflow(input, pricing, reason);
   }
 
   if (!ai || !Array.isArray(ai.steps) || ai.steps.length === 0) {
-    return fallbackWorkflow(input, pricing);
+    return fallbackWorkflow(input, pricing, "AI returned no usable steps — showing the deterministic default workflow.");
   }
 
   // Normalize + harden steps. AI may produce partial fields — fill them in.
