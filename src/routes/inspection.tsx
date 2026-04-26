@@ -590,6 +590,7 @@ function CameraCapture({
   const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
   const [interpreted, setInterpreted] = useState<InterpretedDetection[]>([]);
   const [coach, setCoach] = useState<CoachingHint | null>(null);
+  const [visibility, setVisibility] = useState<SurfaceVisibility | null>(null);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
   // Latest set of already-added issue labels for THIS step. Read inside the
