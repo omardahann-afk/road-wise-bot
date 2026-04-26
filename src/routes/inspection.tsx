@@ -122,6 +122,9 @@ function InspectionFlow() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [stepFrames, setStepFrames] = useState<Record<string, string | null>>({});
   const [aiByStep, setAiByStep] = useState<Record<string, AiFrameResult | null>>({});
+  // Step IDs whose capture frame was flagged low-visibility (dark paint, glare,
+  // low contrast). Drives the report-level "harder to detect" caveat.
+  const [lowVisSteps, setLowVisSteps] = useState<Set<string>>(new Set());
   const [manualNotes, setManualNotes] = useState<Record<string, string>>({});
   const [warningLightToggles, setWarningLightToggles] = useState<Record<string, boolean>>({
     check_engine: false, abs: false, airbag: false, oil: false, battery: false,
