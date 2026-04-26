@@ -338,6 +338,7 @@ export type RepairWorkflow =
   | "fluid_leak"
   | "warning_light_diagnostic"
   | "interior_repair"
+  | "battery_service"
   | "general_repair";
 
 export interface RepairHandoff {
