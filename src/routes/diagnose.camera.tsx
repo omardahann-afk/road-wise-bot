@@ -71,18 +71,40 @@ function CameraDiagnose() {
     setAiResult(null);
     setSavedId(null);
     setAiBusy(true);
+    // Snapshot visibility at capture time — UI may shift before AI returns
+    const captureVisibility = payload.visibility ?? null;
+    setLastVisibility(captureVisibility);
     try {
       const result = await analyzeCameraPhoto({
         dataUrl: payload.dataUrl,
         detections: payload.detections,
         goal: "diagnose",
-        visibility: payload.visibility ?? null,
+        visibility: captureVisibility,
         notes:
           "User pointed camera at a part of their car for diagnosis. " +
           "Be honest if confidence is low — prefer asking the user to retake than guessing wrong. " +
           "When you do identify a part, also describe the most likely issue and an urgency level the user can act on.",
       });
       setAiResult(result);
+
+      // Learning signal — record what AI saw under what surface conditions.
+      void recordLearningEvent({
+        step_id: "diagnose_camera",
+        paint_tone: captureVisibility?.paintTone ?? null,
+        surface_visibility: captureVisibility?.level ?? null,
+        detection_confidence:
+          payload.detections.length > 0
+            ? Math.max(...payload.detections.map((d) => d.score))
+            : null,
+        issue_detected: result.likely_components?.[0]?.likely_issue ?? null,
+        source: "ai_finding",
+        metadata: {
+          overall_confidence: result.overall_confidence ?? null,
+          components_count: result.likely_components?.length ?? 0,
+          low_visibility:
+            captureVisibility?.level === "low" || captureVisibility?.level === "medium",
+        },
+      });
 
       // Auto-save when confident, regardless of user action.
       if (user && result.overall_confidence !== "low") {
