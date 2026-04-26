@@ -364,6 +364,15 @@ function RepairWorkflowDetail(props: {
           </CardContent>
         </Card>
 
+        {/* 4b. AUTOSAGE BRAIN — structured workflow generator (AI + safety + pricing) */}
+        {props.userId && (
+          <AiWorkflowGenerator
+            input={builderInput}
+            userId={props.userId}
+            onWorkflowReady={setGeneratedWorkflow}
+          />
+        )}
+
         {/* 5. STEPS — full engine for signed-in users, preview + lock for guests */}
         {props.userId ? (
           <StepEngine
@@ -371,11 +380,22 @@ function RepairWorkflowDetail(props: {
             issue={props.issue}
             steps={engineSteps}
             userId={props.userId}
+            onAllComplete={() => generatedWorkflow && setFeedbackOpen(true)}
           />
         ) : (
           <GuestStepPreview
             previewStep={engineSteps[0]}
             totalSteps={engineSteps.length}
+          />
+        )}
+
+        {/* Feedback dialog — opens when a generated workflow is fully completed */}
+        {props.userId && generatedWorkflow && (
+          <WorkflowFeedbackDialog
+            open={feedbackOpen}
+            onOpenChange={setFeedbackOpen}
+            workflow={generatedWorkflow}
+            userId={props.userId}
           />
         )}
 
