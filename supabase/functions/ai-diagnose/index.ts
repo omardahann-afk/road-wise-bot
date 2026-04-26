@@ -172,9 +172,13 @@ Return JSON with shape:
  "professional_recommended": boolean
 }
 Context: ${JSON.stringify(ctx)}`;
-    case "inspection_frame":
+    case "inspection_frame": {
+      const visibility = (payload as { surface_visibility?: { level?: string; paintTone?: string; reason?: string } | null }).surface_visibility ?? null;
+      const visBlock = visibility && visibility.level && visibility.level !== "good"
+        ? `\nSURFACE VISIBILITY: Browser flagged "${visibility.level}" visibility (paint: ${visibility.paintTone ?? "unknown"}). Reason: ${visibility.reason ?? "n/a"}. Apply: lower severity confidence on this frame, NEVER claim "no damage detected" — instead set what_to_check_manually with concrete checks (run hand across the panel, view from multiple angles in different light, check edges and lower body for hidden dents/rust). In step_summary include a caveat such as "Dark-coloured panel — dents and scratches are harder to see; users often confirm hidden damage after manual inspection." Limit auto-added findings to high-confidence ones only.`
+        : "";
       return `Task: You are inspecting a USED car for purchase. The user just captured a frame for inspection step "${(payload as { step?: string }).step ?? "unknown"}".
-The browser vision model detected the listed generic objects. Infer LIKELY car-related issues visible at this step (scratches, dents, rust spots, paint mismatch, tire wear, cracked trim, fluid leaks, dashboard warning lights, interior wear).
+The browser vision model detected the listed generic objects. Infer LIKELY car-related issues visible at this step (scratches, dents, rust spots, paint mismatch, tire wear, cracked trim, fluid leaks, dashboard warning lights, interior wear).${visBlock}
 Return JSON ONLY with shape:
 {
  "step_summary": string,
@@ -188,6 +192,7 @@ Return JSON ONLY with shape:
  "next_step_hint": string
 }
 Context: ${JSON.stringify(ctx)}`;
+    }
     case "inspection_final":
       return `Task: Produce a final used-car inspection report and negotiation guidance based on the structured findings, scores, and computed valuation provided in the input.
 Return JSON ONLY with shape:
