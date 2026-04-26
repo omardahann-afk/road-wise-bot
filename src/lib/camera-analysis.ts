@@ -42,6 +42,7 @@ export async function analyzeCameraPhoto(input: {
   area?: string;
   goal?: string;
   notes?: string;
+  visibility?: SurfaceVisibility | null;
 }) {
   return callAi<AiCameraResult>("camera", {
     detected_objects: input.detections,
@@ -49,6 +50,7 @@ export async function analyzeCameraPhoto(input: {
     area: input.area,
     goal: input.goal,
     notes: input.notes,
+    surface_visibility: input.visibility ?? null,
   });
 }
 

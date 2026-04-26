@@ -70,6 +70,7 @@ function CameraDiagnose() {
         dataUrl: payload.dataUrl,
         detections: payload.detections,
         goal: "diagnose",
+        visibility: payload.visibility ?? null,
         notes:
           "User pointed camera at a part of their car for diagnosis. " +
           "Be honest if confidence is low — prefer asking the user to retake than guessing wrong. " +
