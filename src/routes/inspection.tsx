@@ -1088,12 +1088,15 @@ function FindingsList({ findings, onRemove }: { findings: Finding[]; onRemove: (
 
 /* ============================== Report screen ============================== */
 function ReportScreen({
-  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, onRestart,
+  vehicle, findings, scores, valuation, repairBurden, burdenCAD, finalDecision, ai, submitting, inspectionId, lowVisSteps, onRestart,
 }: {
   vehicle: VehicleForm; findings: Finding[]; scores: InspectionScores;
   valuation: ValuationOutput; repairBurden: RepairCostEstimate; burdenCAD: BurdenResult | null;
   finalDecision: FinalDecision; ai: AiFinalResult | null; submitting: boolean;
-  inspectionId: string | null; onRestart: () => void;
+  inspectionId: string | null;
+  /** Step IDs whose capture frame was visibly hard to read. */
+  lowVisSteps: Set<string>;
+  onRestart: () => void;
 }) {
   const decision = finalDecision.decision;
   const decisionMeta = {
@@ -1143,6 +1146,27 @@ function ReportScreen({
           </div>
         </CardContent>
       </Card>
+
+      {/* Low-visibility caveat — appears when one or more capture frames were
+          flagged as hard-to-read (dark paint, glare, low contrast). */}
+      {lowVisSteps.size > 0 && (
+        <Card className="mb-4 border-warning/40 bg-warning/5">
+          <CardContent className="p-4">
+            <div className="mb-1.5 flex items-center gap-2 text-warning">
+              <AlertTriangle className="h-4 w-4" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">Inspection caveat</h3>
+            </div>
+            <p className="text-sm leading-relaxed">
+              Some damage may be harder to detect due to dark paint, reflections, or poor lighting.
+              The camera flagged {lowVisSteps.size === 1 ? "1 step" : `${lowVisSteps.size} steps`}{" "}
+              ({Array.from(lowVisSteps)
+                .map((id) => STEPS.find((s) => s.id === id)?.title ?? id)
+                .join(", ")}) as low-visibility — please run your hand across those panels and
+              re-check in better light before relying on this report alone.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Decision Trust block — confidence + signals + risks/positives/unknowns */}
       <DecisionTrustBlock
