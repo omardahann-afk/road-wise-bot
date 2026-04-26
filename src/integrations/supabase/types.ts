@@ -133,6 +133,54 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_events: {
+        Row: {
+          created_at: string
+          detection_confidence: number | null
+          id: string
+          issue_confirmed_by_user: boolean | null
+          issue_detected: string | null
+          metadata: Json
+          paint_color: string | null
+          paint_tone: string | null
+          source: string
+          step_id: string | null
+          surface_visibility: string | null
+          user_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detection_confidence?: number | null
+          id?: string
+          issue_confirmed_by_user?: boolean | null
+          issue_detected?: string | null
+          metadata?: Json
+          paint_color?: string | null
+          paint_tone?: string | null
+          source: string
+          step_id?: string | null
+          surface_visibility?: string | null
+          user_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detection_confidence?: number | null
+          id?: string
+          issue_confirmed_by_user?: boolean | null
+          issue_detected?: string | null
+          metadata?: Json
+          paint_color?: string | null
+          paint_tone?: string | null
+          source?: string
+          step_id?: string | null
+          surface_visibility?: string | null
+          user_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       product_recommendation_templates: {
         Row: {
           created_at: string

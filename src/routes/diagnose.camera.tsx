@@ -6,10 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-result";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
+import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import type { SurfaceVisibility } from "@/lib/camera-visibility";
 import {
   Camera,
   RotateCcw,
@@ -49,6 +51,7 @@ function CameraDiagnose() {
     streaming,
     modelLoading,
     hint,
+    visibility,
     capturedPreview,
     startStream,
     stopStream,
@@ -58,7 +61,7 @@ function CameraDiagnose() {
     clearCapturedPreview,
   } = useSmartCamera("front_exterior");
 
-  async function runAnalysis(payload: { dataUrl: string; detections: { class: string; score: number }[] }) {
+  async function runAnalysis(payload: { dataUrl: string; detections: { class: string; score: number }[]; visibility?: SurfaceVisibility | null }) {
     setAiResult(null);
     setSavedId(null);
     setAiBusy(true);
@@ -67,6 +70,7 @@ function CameraDiagnose() {
         dataUrl: payload.dataUrl,
         detections: payload.detections,
         goal: "diagnose",
+        visibility: payload.visibility ?? null,
         notes:
           "User pointed camera at a part of their car for diagnosis. " +
           "Be honest if confidence is low — prefer asking the user to retake than guessing wrong. " +
@@ -168,6 +172,7 @@ function CameraDiagnose() {
 
         {/* Live coaching only when actively streaming pre-capture */}
         {streaming && !capturedPreview && <CoachingOverlay hint={hint} />}
+        {streaming && !capturedPreview && <LowVisibilityBadge visibility={visibility} />}
 
         {/* Captured preview */}
         {capturedPreview && (

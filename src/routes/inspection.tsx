@@ -57,6 +57,10 @@ import { DetectionChips } from "@/components/diagnostics/detection-chips";
 import { computeDecisionTrust } from "@/lib/decision-trust";
 import { DecisionTrustBlock } from "@/components/diagnostics/decision-trust-block";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
+import { assessSurfaceVisibility, sampleEdgeStrength, lowVisibilityCoach, type SurfaceVisibility } from "@/lib/camera-visibility";
+import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
+import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
+import { recordLearningEvent } from "@/lib/learning";
 
 export const Route = createFileRoute("/inspection")({
   component: InspectionFlow,
@@ -586,6 +590,7 @@ function CameraCapture({
   const [lastDetections, setLastDetections] = useState<{ class: string; score: number; bbox: [number,number,number,number] }[]>([]);
   const [interpreted, setInterpreted] = useState<InterpretedDetection[]>([]);
   const [coach, setCoach] = useState<CoachingHint | null>(null);
+  const [visibility, setVisibility] = useState<SurfaceVisibility | null>(null);
   const prevPixelsRef = useRef<Uint8ClampedArray | null>(null);
   const scratchRef = useRef<HTMLCanvasElement | null>(null);
   // Latest set of already-added issue labels for THIS step. Read inside the
@@ -658,55 +663,81 @@ function CameraCapture({
         const preds = await model.detect(v);
         const lite = preds.map((p) => ({ class: p.class, score: p.score, bbox: p.bbox as [number,number,number,number] }));
         setLastDetections(lite);
+
+        // Visibility & coaching first — they damp confidence in interpretation.
+        let vis: SurfaceVisibility | null = null;
+        if (scratchRef.current) {
+          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
+          prevPixelsRef.current = pixels;
+          const edge = sampleEdgeStrength(scratchRef.current);
+          vis = assessSurfaceVisibility(stats, edge);
+          setVisibility(vis);
+          const baseHint = coachForStep(stepId, stats);
+          const lowVisMsg = lowVisibilityCoach(vis);
+          if (lowVisMsg && (baseHint.tone === "good" || baseHint.direction === "center_panel")) {
+            setCoach({
+              tone: vis.level === "low" ? "warn" : "good",
+              direction: "improve_lighting",
+              message: lowVisMsg,
+              confidence: 0.8,
+            });
+          } else {
+            setCoach(baseHint);
+          }
+        }
+
         const ctx = overlay.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, overlay.width, overlay.height);
           ctx.lineWidth = 3;
           ctx.font = "16px sans-serif";
           // Use interpreted automotive labels + confidence-based tone for the boxes
-          const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight);
+          const interpretedNow = interpretDetections(lite, stepId, v.videoWidth, v.videoHeight, vis);
           interpretedNow.forEach((p) => {
             const [x, y, w, h] = p.bbox;
             const issueKey = surfaceIssueLabel(p.suggestedIssue).toLowerCase();
             const isAdded = !!issueKey && addedIssuesRef.current.has(issueKey);
+            const dashed = !!p.lowVisibility && !isAdded;
             // Already-added detections render in a muted/locked style so the
             // user gets instant feedback that the box is captured.
             const stroke = isAdded
               ? "rgba(148,163,184,0.85)" // slate-400 — locked
-              : p.confidence === "high"
-                ? "rgba(74,222,128,0.95)"   // success green
-                : p.confidence === "medium"
-                  ? "rgba(96,165,250,0.95)" // primary blue
-                  : "rgba(250,204,21,0.95)"; // warning amber
+              : dashed
+                ? "rgba(250,204,21,0.95)" // warning amber for low-vis
+                : p.confidence === "high"
+                  ? "rgba(74,222,128,0.95)"   // success green
+                  : p.confidence === "medium"
+                    ? "rgba(96,165,250,0.95)" // primary blue
+                    : "rgba(250,204,21,0.95)"; // warning amber
             const fill = isAdded
               ? "rgba(148,163,184,0.10)"
-              : p.confidence === "high"
-                ? "rgba(74,222,128,0.16)"
-                : p.confidence === "medium"
-                  ? "rgba(96,165,250,0.16)"
-                  : "rgba(250,204,21,0.16)";
+              : dashed
+                ? "rgba(250,204,21,0.10)"
+                : p.confidence === "high"
+                  ? "rgba(74,222,128,0.16)"
+                  : p.confidence === "medium"
+                    ? "rgba(96,165,250,0.16)"
+                    : "rgba(250,204,21,0.16)";
+            ctx.setLineDash(dashed ? [8, 6] : []);
             ctx.strokeStyle = stroke;
             ctx.fillStyle = fill;
             ctx.fillRect(x, y, w, h);
             ctx.strokeRect(x, y, w, h);
+            ctx.setLineDash([]);
             const label = isAdded
               ? `✓ Added · ${p.label}`
-              : `${p.label} · ${p.confidencePct}% (${p.confidence})`;
+              : dashed
+                ? `${p.label} · ${p.confidencePct}% · low-vis`
+                : `${p.label} · ${p.confidencePct}% (${p.confidence})`;
             const tw = ctx.measureText(label).width + 10;
             ctx.fillStyle = "rgba(0,0,0,0.78)";
             ctx.fillRect(x, Math.max(0, y - 22), tw, 22);
             ctx.fillStyle = stroke;
             ctx.fillText(label, x + 5, Math.max(14, y - 6));
           });
+          // Camera intelligence: interpret detections in automotive terms
+          setInterpreted(interpretedNow);
         }
-        // Coaching: deterministic frame analysis
-        if (scratchRef.current) {
-          const { stats, pixels } = sampleFrameStats(v, prevPixelsRef.current, lite, scratchRef.current);
-          prevPixelsRef.current = pixels;
-          setCoach(coachForStep(stepId, stats));
-        }
-        // Camera intelligence: interpret detections in automotive terms
-        setInterpreted(interpretDetections(lite, stepId, v.videoWidth, v.videoHeight));
       } catch (e) { console.error(e); }
     }
     rafRef.current = requestAnimationFrame(detectLoop);
@@ -723,10 +754,25 @@ function CameraCapture({
     try {
       const result = await callAi<AiFrameResult>(
         "inspection_frame",
-        { step: stepId, category, detected_objects: lastDetections },
+        {
+          step: stepId,
+          category,
+          detected_objects: lastDetections,
+          surface_visibility: visibility,
+        },
         { year: Number(vehicle.year) || null, make: vehicle.make, model: vehicle.model, mileage: Number(vehicle.mileage) || null },
       );
       onAi(result);
+      // Learning signal — what we tried to detect under what conditions.
+      void recordLearningEvent({
+        step_id: stepId,
+        paint_tone: visibility?.paintTone ?? null,
+        surface_visibility: visibility?.level ?? null,
+        detection_confidence: interpreted[0]?.score ?? null,
+        issue_detected: result.findings?.[0]?.issue ?? null,
+        source: "ai_finding",
+        metadata: { findings_count: result.findings?.length ?? 0 },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI analysis failed");
     } finally { setAnalyzing(false); }
@@ -756,6 +802,7 @@ function CameraCapture({
               ● LIVE • {STEP_GUIDANCE[stepId]?.hint ?? "Inspecting"}
             </div>
             <CoachingOverlay hint={coach} />
+            <LowVisibilityBadge visibility={visibility} />
           </>
         )}
 
@@ -782,6 +829,40 @@ function CameraCapture({
             if (addedIssues?.has(key)) return; // de-dup guard
             onAddCandidate(issue, severity);
             toast.success(`Added: ${issue}`);
+            void recordLearningEvent({
+              step_id: stepId,
+              paint_tone: visibility?.paintTone ?? null,
+              surface_visibility: visibility?.level ?? null,
+              detection_confidence: interpreted.find((d) => surfaceIssueLabel(d.suggestedIssue) === issue)?.score ?? null,
+              issue_detected: issue,
+              issue_confirmed_by_user: true,
+              source: "auto_detection",
+            });
+          }}
+        />
+      )}
+
+      {/* Manual assist — always available, especially valuable on dark / low-vis surfaces */}
+      {streaming && (
+        <ManualDamageMark
+          hint={
+            visibility?.level === "low"
+              ? "Surface is hard to read — tap if you spot something the camera missed."
+              : null
+          }
+          onMark={(label, severity) => {
+            const key = label.toLowerCase();
+            if (addedIssues?.has(key)) return;
+            onAddCandidate(label, severity);
+            toast.success(`Marked: ${label}`);
+            void recordLearningEvent({
+              step_id: stepId,
+              paint_tone: visibility?.paintTone ?? null,
+              surface_visibility: visibility?.level ?? null,
+              issue_detected: label,
+              issue_confirmed_by_user: true,
+              source: "manual_mark",
+            });
           }}
         />
       )}

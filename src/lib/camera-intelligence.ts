@@ -7,6 +7,7 @@
 // instead surfaces "candidate" findings the user can confirm with one tap.
 
 import type { Finding } from "@/lib/valuation";
+import type { SurfaceVisibility } from "@/lib/camera-visibility";
 
 export type AutoCategory =
   | "engine_bay"
@@ -58,6 +59,8 @@ export interface InterpretedDetection {
   suggestedSeverity: Finding["severity"];
   /** Short contextual coach prompt for THIS detection. */
   prompt: string;
+  /** True when surface visibility damped this detection. UI uses dashed bbox. */
+  lowVisibility?: boolean;
 }
 
 /* ---------- COCO class → automotive category mapping ---------- */
@@ -207,24 +210,39 @@ export function interpretDetections(
   stepId: string | undefined,
   frameW: number,
   frameH: number,
+  visibility?: SurfaceVisibility | null,
 ): InterpretedDetection[] {
+  const mult = visibility?.confidenceMultiplier ?? 1;
+  const lowVis = visibility?.level === "low";
+  const isDark = visibility?.paintTone === "dark";
+
   return detections
     .filter((d) => d.score >= 0.3)
     .slice(0, 6)
     .map((d) => {
       const category = mapClassToCategory(d.class, stepId);
       const cand = inferCandidateIssue(stepId, d, category, frameW, frameH);
+      const dampedScore = Math.max(0, Math.min(1, d.score * mult));
+      // On dark or low-vis surfaces NEVER auto-promote to a damage candidate
+      // — keep the chip but require manual confirmation.
+      const suggestedIssue = lowVis ? null : cand.issue;
+      const prompt = lowVis
+        ? `${cand.prompt} (Low-visibility surface — confirm manually.)`
+        : isDark && cand.issue
+          ? `${cand.prompt} Dark paint hides damage — verify with light angle.`
+          : cand.prompt;
       return {
         class: d.class,
         category,
         label: categoryLabel(category, d.class),
-        score: d.score,
-        confidence: bucketConfidence(d.score),
-        confidencePct: Math.round(d.score * 100),
+        score: dampedScore,
+        confidence: bucketConfidence(dampedScore),
+        confidencePct: Math.round(dampedScore * 100),
         bbox: d.bbox,
-        suggestedIssue: cand.issue,
+        suggestedIssue,
         suggestedSeverity: cand.severity,
-        prompt: cand.prompt,
+        prompt,
+        lowVisibility: lowVis || isDark,
       };
     });
 }

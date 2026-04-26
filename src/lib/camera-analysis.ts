@@ -1,4 +1,5 @@
 import { callAi } from "@/lib/ai";
+import type { SurfaceVisibility } from "@/lib/camera-visibility";
 
 export interface CleaningAdvice {
   /** Material(s) detected (e.g. "leather seat", "alloy wheel"). */
@@ -41,6 +42,7 @@ export async function analyzeCameraPhoto(input: {
   area?: string;
   goal?: string;
   notes?: string;
+  visibility?: SurfaceVisibility | null;
 }) {
   return callAi<AiCameraResult>("camera", {
     detected_objects: input.detections,
@@ -48,6 +50,7 @@ export async function analyzeCameraPhoto(input: {
     area: input.area,
     goal: input.goal,
     notes: input.notes,
+    surface_visibility: input.visibility ?? null,
   });
 }
 
