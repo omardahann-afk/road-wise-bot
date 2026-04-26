@@ -754,10 +754,25 @@ function CameraCapture({
     try {
       const result = await callAi<AiFrameResult>(
         "inspection_frame",
-        { step: stepId, category, detected_objects: lastDetections },
+        {
+          step: stepId,
+          category,
+          detected_objects: lastDetections,
+          surface_visibility: visibility,
+        },
         { year: Number(vehicle.year) || null, make: vehicle.make, model: vehicle.model, mileage: Number(vehicle.mileage) || null },
       );
       onAi(result);
+      // Learning signal — what we tried to detect under what conditions.
+      void recordLearningEvent({
+        step_id: stepId,
+        paint_tone: visibility?.paintTone ?? null,
+        surface_visibility: visibility?.level ?? null,
+        detection_confidence: interpreted[0]?.score ?? null,
+        issue_detected: result.findings?.[0]?.issue ?? null,
+        source: "ai_finding",
+        metadata: { findings_count: result.findings?.length ?? 0 },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI analysis failed");
     } finally { setAnalyzing(false); }
@@ -787,6 +802,7 @@ function CameraCapture({
               ● LIVE • {STEP_GUIDANCE[stepId]?.hint ?? "Inspecting"}
             </div>
             <CoachingOverlay hint={coach} />
+            <LowVisibilityBadge visibility={visibility} />
           </>
         )}
 
