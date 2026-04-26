@@ -75,6 +75,10 @@ export interface WorkflowStep {
 export interface GeneratedWorkflow {
   workflow_id: string;
   source: "ai" | "fallback" | "hybrid";
+  /** When source !== "ai", a short user-friendly reason why the AI path didn't run. */
+  fallback_reason?: string | null;
+  /** Pricing always comes from the deterministic engine — never from AI. */
+  pricing_source: "engine";
   title: string;
   issue_type: IssueType;
   workflow_kind: WorkflowKind;
