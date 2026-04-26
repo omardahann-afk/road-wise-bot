@@ -334,6 +334,14 @@ function InspectionFlow() {
           onFrame={(dataUrl) => setStepFrames((p) => ({ ...p, [currentStep.id]: dataUrl }))}
           onAi={(ai) => recordFrameFindings(currentStep.id, ai)}
           onAddManual={(issue, severity) => recordManualFinding(currentStep.id, currentStep.category, issue, severity)}
+          onLowVisibilityCapture={(stepId) =>
+            setLowVisSteps((prev) => {
+              if (prev.has(stepId)) return prev;
+              const next = new Set(prev);
+              next.add(stepId);
+              return next;
+            })
+          }
           findings={findings.filter((f) => f.step === currentStep.id)}
           allFindings={findings}
           addedIssues={
