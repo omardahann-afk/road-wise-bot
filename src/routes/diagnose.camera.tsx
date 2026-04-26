@@ -352,6 +352,58 @@ function CameraDiagnose() {
         ) : null}
       </div>
 
+      {/* Manual assist — keeps diagnose honest when the camera struggles
+          (dark paint, reflections, low light). Mirrors inspection behavior. */}
+      {(streaming || capturedPreview) && (
+        <ManualDamageMark
+          hint={
+            (visibility?.level === "low" || lastVisibility?.level === "low")
+              ? "Dark paint or reflections can hide damage — mark anything you can see in person."
+              : null
+          }
+          onMark={handleManualMark}
+        />
+      )}
+
+      {manualFindings.length > 0 && (
+        <Card className="mb-4 border-warning/30 bg-warning/5">
+          <CardContent className="p-3">
+            <div className="mb-2 flex items-center gap-2 text-warning">
+              <ScanEye className="h-4 w-4" />
+              <h2 className="text-xs font-bold uppercase tracking-wider">
+                Your manual marks ({manualFindings.length})
+              </h2>
+            </div>
+            <ul className="space-y-1.5">
+              {manualFindings.map((f, idx) => (
+                <li
+                  key={`${f.issue}-${idx}`}
+                  className="flex items-center justify-between rounded-lg bg-background/60 px-2 py-1.5 text-xs"
+                >
+                  <span className="flex-1 truncate">
+                    <span className="font-medium">{f.issue}</span>
+                    <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {f.severity}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeManualMark(idx)}
+                    aria-label={`Remove ${f.issue}`}
+                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Marks are saved with this diagnostic and help train future detection.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Results */}
       {aiResult ? (
         <CameraAnalysisResult
