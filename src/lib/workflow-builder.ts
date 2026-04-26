@@ -22,6 +22,7 @@ import {
 } from "@/lib/pricing";
 import {
   FALLBACK_STEPS,
+  FALLBACK_PARTS,
   GUIDE_META,
   type EngineStep,
 } from "@/lib/repair-engine";
