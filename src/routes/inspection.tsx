@@ -829,6 +829,40 @@ function CameraCapture({
             if (addedIssues?.has(key)) return; // de-dup guard
             onAddCandidate(issue, severity);
             toast.success(`Added: ${issue}`);
+            void recordLearningEvent({
+              step_id: stepId,
+              paint_tone: visibility?.paintTone ?? null,
+              surface_visibility: visibility?.level ?? null,
+              detection_confidence: interpreted.find((d) => surfaceIssueLabel(d.suggestedIssue) === issue)?.score ?? null,
+              issue_detected: issue,
+              issue_confirmed_by_user: true,
+              source: "auto_detection",
+            });
+          }}
+        />
+      )}
+
+      {/* Manual assist — always available, especially valuable on dark / low-vis surfaces */}
+      {streaming && (
+        <ManualDamageMark
+          hint={
+            visibility?.level === "low"
+              ? "Surface is hard to read — tap if you spot something the camera missed."
+              : null
+          }
+          onMark={(label, severity) => {
+            const key = label.toLowerCase();
+            if (addedIssues?.has(key)) return;
+            onAddCandidate(label, severity);
+            toast.success(`Marked: ${label}`);
+            void recordLearningEvent({
+              step_id: stepId,
+              paint_tone: visibility?.paintTone ?? null,
+              surface_visibility: visibility?.level ?? null,
+              issue_detected: label,
+              issue_confirmed_by_user: true,
+              source: "manual_mark",
+            });
           }}
         />
       )}
