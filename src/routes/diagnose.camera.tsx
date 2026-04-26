@@ -7,11 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-result";
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
+import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { recordLearningEvent } from "@/lib/learning";
 import type { SurfaceVisibility } from "@/lib/camera-visibility";
+import type { Finding } from "@/lib/valuation";
+import { Trash2 } from "lucide-react";
 import {
   Camera,
   RotateCcw,
@@ -23,6 +27,7 @@ import {
   Sun,
   Hand,
   Search,
+  ScanEye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +46,8 @@ function CameraDiagnose() {
   const [aiResult, setAiResult] = useState<AiCameraResult | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savingReport, setSavingReport] = useState(false);
+  const [manualFindings, setManualFindings] = useState<Finding[]>([]);
+  const [lastVisibility, setLastVisibility] = useState<SurfaceVisibility | null>(null);
   const { user } = useAuth();
 
   const {
@@ -65,18 +72,39 @@ function CameraDiagnose() {
     setAiResult(null);
     setSavedId(null);
     setAiBusy(true);
+    // Snapshot visibility at capture time — UI may shift before AI returns
+    const captureVisibility = payload.visibility ?? null;
+    setLastVisibility(captureVisibility);
     try {
       const result = await analyzeCameraPhoto({
         dataUrl: payload.dataUrl,
         detections: payload.detections,
         goal: "diagnose",
-        visibility: payload.visibility ?? null,
+        visibility: captureVisibility,
         notes:
           "User pointed camera at a part of their car for diagnosis. " +
           "Be honest if confidence is low — prefer asking the user to retake than guessing wrong. " +
           "When you do identify a part, also describe the most likely issue and an urgency level the user can act on.",
       });
       setAiResult(result);
+
+      // Learning signal — record what AI saw under what surface conditions.
+      void recordLearningEvent({
+        step_id: "diagnose_camera",
+        paint_tone: captureVisibility?.paintTone ?? null,
+        surface_visibility: captureVisibility?.level ?? null,
+        detection_confidence:
+          payload.detections.length > 0
+            ? Math.max(...payload.detections.map((d) => d.score))
+            : null,
+        issue_detected: result.likely_components?.[0]?.likely_issue ?? null,
+        source: "ai_finding",
+        metadata: {
+          overall_confidence: result.overall_confidence ?? null,
+          components_count: result.likely_components?.length ?? 0,
+          low_visibility: captureVisibility?.level === "low",
+        },
+      });
 
       // Auto-save when confident, regardless of user action.
       if (user && result.overall_confidence !== "low") {
@@ -98,7 +126,11 @@ function CameraDiagnose() {
         .insert({
           user_id: user.id,
           mode: "camera",
-          input: { detected_objects: [] },
+          input: {
+            detected_objects: [],
+            manual_findings: manualFindings,
+            surface_visibility: lastVisibility ?? null,
+          } as never,
           ai_output: result as never,
           summary: result.summary,
         })
@@ -139,8 +171,40 @@ function CameraDiagnose() {
   function handleRetake() {
     setAiResult(null);
     setSavedId(null);
+    setManualFindings([]);
+    setLastVisibility(null);
     clearCapturedPreview();
     if (!streaming) void startStream();
+  }
+
+  function handleManualMark(label: string, severity: Finding["severity"]) {
+    const key = label.toLowerCase();
+    if (manualFindings.some((f) => f.issue.toLowerCase() === key)) {
+      toast.info("Already marked");
+      return;
+    }
+    const finding: Finding = {
+      step: "diagnose_camera",
+      category: "exterior",
+      issue: label,
+      severity,
+      notes: "Manually marked during camera diagnose",
+    };
+    setManualFindings((prev) => [...prev, finding]);
+    toast.success(`Marked: ${label}`);
+    void recordLearningEvent({
+      step_id: "diagnose_camera",
+      paint_tone: lastVisibility?.paintTone ?? null,
+      surface_visibility: lastVisibility?.level ?? null,
+      issue_detected: label,
+      issue_confirmed_by_user: true,
+      source: "manual_mark",
+      metadata: { severity, route: "/diagnose/camera" },
+    });
+  }
+
+  function removeManualMark(idx: number) {
+    setManualFindings((prev) => prev.filter((_, i) => i !== idx));
   }
 
   return (
@@ -288,6 +352,58 @@ function CameraDiagnose() {
           </>
         ) : null}
       </div>
+
+      {/* Manual assist — keeps diagnose honest when the camera struggles
+          (dark paint, reflections, low light). Mirrors inspection behavior. */}
+      {(streaming || capturedPreview) && (
+        <ManualDamageMark
+          hint={
+            (visibility?.level === "low" || lastVisibility?.level === "low")
+              ? "Dark paint or reflections can hide damage — mark anything you can see in person."
+              : null
+          }
+          onMark={handleManualMark}
+        />
+      )}
+
+      {manualFindings.length > 0 && (
+        <Card className="mb-4 border-warning/30 bg-warning/5">
+          <CardContent className="p-3">
+            <div className="mb-2 flex items-center gap-2 text-warning">
+              <ScanEye className="h-4 w-4" />
+              <h2 className="text-xs font-bold uppercase tracking-wider">
+                Your manual marks ({manualFindings.length})
+              </h2>
+            </div>
+            <ul className="space-y-1.5">
+              {manualFindings.map((f, idx) => (
+                <li
+                  key={`${f.issue}-${idx}`}
+                  className="flex items-center justify-between rounded-lg bg-background/60 px-2 py-1.5 text-xs"
+                >
+                  <span className="flex-1 truncate">
+                    <span className="font-medium">{f.issue}</span>
+                    <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {f.severity}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeManualMark(idx)}
+                    aria-label={`Remove ${f.issue}`}
+                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Marks are saved with this diagnostic and help train future detection.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Results */}
       {aiResult ? (
