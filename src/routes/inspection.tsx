@@ -766,6 +766,12 @@ function CameraCapture({
     c.getContext("2d")?.drawImage(v, 0, 0);
     const dataUrl = c.toDataURL("image/jpeg", 0.7);
     onFrame(dataUrl);
+    // Capture-time visibility snapshot — used to flag this step in the report
+    // even if guidance shifted before the network round-trip returns.
+    const captureVisibility = visibility;
+    if (captureVisibility?.level === "low") {
+      onLowVisibilityCapture(stepId);
+    }
     setAnalyzing(true);
     try {
       const result = await callAi<AiFrameResult>(
@@ -774,20 +780,43 @@ function CameraCapture({
           step: stepId,
           category,
           detected_objects: lastDetections,
-          surface_visibility: visibility,
+          surface_visibility: captureVisibility,
         },
         { year: Number(vehicle.year) || null, make: vehicle.make, model: vehicle.model, mileage: Number(vehicle.mileage) || null },
       );
-      onAi(result);
+      // No-false-confidence guard: if the surface was hard to read AND the AI
+      // returned zero findings, override the step summary so we never silently
+      // imply "all clear" on a panel we couldn't see properly.
+      const safeResult: AiFrameResult =
+        captureVisibility?.level === "low" && (result.findings?.length ?? 0) === 0
+          ? {
+              ...result,
+              step_summary:
+                "Surface was hard to read here (dark paint, reflections, or low light). The camera can't confirm the panel is damage-free — please run your hand across it and recheck in better light.",
+              what_to_check_manually: Array.from(
+                new Set([
+                  ...(result.what_to_check_manually ?? []),
+                  "Run your hand slowly across the panel — fingertips catch dents the camera can miss.",
+                  "Re-shoot from a new angle so a light streak runs across the surface.",
+                  "Check the lower body and edges where rust and dings hide.",
+                ]),
+              ),
+            }
+          : result;
+      onAi(safeResult);
       // Learning signal — what we tried to detect under what conditions.
       void recordLearningEvent({
         step_id: stepId,
-        paint_tone: visibility?.paintTone ?? null,
-        surface_visibility: visibility?.level ?? null,
+        paint_tone: captureVisibility?.paintTone ?? null,
+        surface_visibility: captureVisibility?.level ?? null,
         detection_confidence: interpreted[0]?.score ?? null,
-        issue_detected: result.findings?.[0]?.issue ?? null,
+        issue_detected: safeResult.findings?.[0]?.issue ?? null,
         source: "ai_finding",
-        metadata: { findings_count: result.findings?.length ?? 0 },
+        metadata: {
+          findings_count: safeResult.findings?.length ?? 0,
+          low_visibility_guard_applied:
+            captureVisibility?.level === "low" && (result.findings?.length ?? 0) === 0,
+        },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI analysis failed");
