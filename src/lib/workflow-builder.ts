@@ -22,6 +22,7 @@ import {
 } from "@/lib/pricing";
 import {
   FALLBACK_STEPS,
+  FALLBACK_PARTS,
   GUIDE_META,
   type EngineStep,
 } from "@/lib/repair-engine";
@@ -74,6 +75,10 @@ export interface WorkflowStep {
 export interface GeneratedWorkflow {
   workflow_id: string;
   source: "ai" | "fallback" | "hybrid";
+  /** When source !== "ai", a short user-friendly reason why the AI path didn't run. */
+  fallback_reason?: string | null;
+  /** Pricing always comes from the deterministic engine — never from AI. */
+  pricing_source: "engine";
   title: string;
   issue_type: IssueType;
   workflow_kind: WorkflowKind;
@@ -190,6 +195,7 @@ const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
   fluid_leak: "fluid_leak",
   warning_light_diagnostic: "warning_light_diagnostic",
   interior_repair: "interior_repair",
+  battery_service: "battery",
   general_repair: "general_repair",
 };
 
@@ -238,7 +244,11 @@ function summarizeInsights(rwi: BuildWorkflowInput["real_world_insights"]): stri
 
 // ---------- Fallback workflow (used when AI fails) ------------------------
 
-function fallbackWorkflow(input: BuildWorkflowInput, pricing: PricingResult): GeneratedWorkflow {
+function fallbackWorkflow(
+  input: BuildWorkflowInput,
+  pricing: PricingResult,
+  fallbackReason: string | null = null,
+): GeneratedWorkflow {
   const baseSteps = FALLBACK_STEPS[input.workflow] ?? FALLBACK_STEPS.general_repair;
   const meta = GUIDE_META[input.workflow] ?? GUIDE_META.general_repair;
   const safety = hardenSafety(meta.safety, input);
@@ -256,6 +266,8 @@ function fallbackWorkflow(input: BuildWorkflowInput, pricing: PricingResult): Ge
   return {
     workflow_id: makeWorkflowId(input),
     source: "fallback",
+    fallback_reason: fallbackReason,
+    pricing_source: "engine",
     title: meta.tools.length > 0 ? `${input.workflow.replace(/_/g, " ")} — guided walkthrough` : "Guided repair",
     issue_type: workflowToIssueType(input.workflow),
     workflow_kind: input.kind,
@@ -266,7 +278,7 @@ function fallbackWorkflow(input: BuildWorkflowInput, pricing: PricingResult): Ge
     diy_possible: pricing.diy_possible,
     mechanic_recommended: safety.mechanicRecommended || !pricing.diy_possible,
     tools_required: meta.tools.slice(0, 8),
-    parts_required: [],
+    parts_required: FALLBACK_PARTS[input.workflow] ?? FALLBACK_PARTS.general_repair,
     safety_warnings: safety.warnings,
     real_world_tips: summarizeInsights(input.real_world_insights),
     steps,

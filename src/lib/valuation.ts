@@ -338,6 +338,7 @@ export type RepairWorkflow =
   | "fluid_leak"
   | "warning_light_diagnostic"
   | "interior_repair"
+  | "battery_service"
   | "general_repair";
 
 export interface RepairHandoff {
@@ -357,6 +358,7 @@ const WORKFLOW_LABEL: Record<RepairWorkflow, string> = {
   fluid_leak: "Fluid Leak Repair",
   warning_light_diagnostic: "Warning Light Diagnostic",
   interior_repair: "Interior Repair",
+  battery_service: "Battery Replacement",
   general_repair: "General Repair",
 };
 
@@ -368,6 +370,7 @@ export function classifyRepair(f: Finding): RepairHandoff {
   else if (/rust|corros|oxid/.test(t)) workflow = "rust_repair";
   else if (/scratch|paint|chip|clear ?coat|repaint|mismatch|swirl/.test(t)) workflow = "paint_repair";
   else if (f.category === "tires" || /tire|tread|sidewall|wheel|rim/.test(t)) workflow = "tire_service";
+  else if (/battery|won['’]?t start|cranks slow|dead battery|no crank/.test(t)) workflow = "battery_service";
   else if (/leak|seep|drip|fluid|coolant|oil pan|gasket/.test(t)) workflow = "fluid_leak";
   else if (f.category === "dashboard" || /warning light|check engine|abs|airbag|srs/.test(t)) workflow = "warning_light_diagnostic";
   else if (f.category === "interior") workflow = "interior_repair";

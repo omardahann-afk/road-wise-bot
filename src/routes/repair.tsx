@@ -17,6 +17,7 @@ import {
   Gauge,
   Sofa,
   AlertTriangle,
+  BatteryCharging,
 } from "lucide-react";
 import { toast } from "sonner";
 import { callAi } from "@/lib/ai";
@@ -50,6 +51,7 @@ const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
   fluid_leak: "fluid_leak",
   warning_light_diagnostic: "warning_light_diagnostic",
   interior_repair: "interior_repair",
+  battery_service: "battery",
   general_repair: "general_repair",
 };
 
@@ -63,6 +65,7 @@ const searchSchema = z.object({
       "fluid_leak",
       "warning_light_diagnostic",
       "interior_repair",
+      "battery_service",
       "general_repair",
     ])
     .optional(),
@@ -95,6 +98,7 @@ const WORKFLOWS: WorkflowMeta[] = [
   { id: "fluid_leak", title: "Fluid Leak", description: "Identify & seal common leaks", icon: Droplet, difficulty: "advanced", diy_friendly: false },
   { id: "warning_light_diagnostic", title: "Warning Light", description: "OBD2 scan & fault tracing", icon: Gauge, difficulty: "intermediate", diy_friendly: true },
   { id: "interior_repair", title: "Interior Repair", description: "Trim, upholstery, plastic", icon: Sofa, difficulty: "intermediate", diy_friendly: true },
+  { id: "battery_service", title: "Battery Replacement", description: "Test, swap, terminal cleaning", icon: BatteryCharging, difficulty: "beginner", diy_friendly: true },
   { id: "general_repair", title: "General Repair", description: "Custom guided diagnostic & repair", icon: Wrench, difficulty: "intermediate", diy_friendly: true },
 ];
 

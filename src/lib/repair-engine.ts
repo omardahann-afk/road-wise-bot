@@ -223,6 +223,15 @@ export const FALLBACK_STEPS: Record<RepairWorkflow, EngineStep[]> = {
     { step_number: 4, title: "Color match in thin coats", instruction: "Mix the dye to match — test on a hidden spot like under the seat first. Apply in light coats with a sponge applicator; multiple thin layers always look better than one heavy one.", warning: "Mismatched color stands out forever in daylight. Take time to test." },
     { step_number: 5, title: "Seal and protect", instruction: "Apply the kit's sealer to lock in color and texture. Avoid sitting on the seat or touching the area for 24h while it cures." },
   ],
+  battery_service: [
+    { step_number: 1, title: "Confirm the battery is the failure", instruction: "Test resting voltage with a multimeter (key off, 5+ min). Healthy = 12.6V+; weak = 12.2–12.4V; dead < 12.0V. Also load-test if you have a tester. Rule out the alternator (charging voltage 13.8–14.6V at idle) and starter before swapping the battery.", why_it_matters: "Replacing a good battery wastes $200+. Most no-start issues are corroded terminals or a bad alternator, not the battery itself.", tools: ["Multimeter"] },
+    { step_number: 2, title: "Locate the battery and access path", instruction: "Find your battery (under hood, under seat, in trunk, or — on some Chrysler/Dodge platforms like the Journey, Avenger, Sebring — behind the driver-side front wheel well). For wheel-well access, turn the wheel fully and remove the inner fender liner clips with a trim tool.", why_it_matters: "Wheel-well batteries have no top-side access; trying to reach from above wastes time and risks scratching the fender.", tools: ["Trim removal tool", "10mm socket"], warning: "Park on level ground with the parking brake on before removing any fender liner." },
+    { step_number: 3, title: "Disconnect the battery safely", instruction: "Disconnect the NEGATIVE (−, black) terminal first, then the POSITIVE (+, red). Tape the negative cable end so it can't swing back and touch the post. Note any memory-saver plug you might want for radio/seat presets.", why_it_matters: "Negative-first disconnect prevents a wrench bridging hot-to-chassis, which can spark, weld, or pop fuses.", tools: ["10mm socket", "Battery terminal puller"], warning: "Wear safety glasses and remove jewelry — a slipped wrench across the positive post can flash-weld and burn." },
+    { step_number: 4, title: "Free the hold-down hardware (often rusted)", instruction: "Soak the hold-down bolts/clamp with penetrating oil, wait 10–15 min (24h is ideal if you can). Use a long-reach socket and extension to back them out slowly. If a bolt feels gritty or binds, stop and re-soak — don't force it.", why_it_matters: "Hold-down bolts on wheel-well batteries are exposed to road salt and seize commonly. Snapping one turns a 30-min job into 3 hours of extraction.", tools: ["Penetrating oil", "Long-reach 10mm socket", "Extension"], warning: "If the bolt head rounds off or the bolt feels like it's about to shear, stop. Replacement hold-down hardware is cheap; an extracted broken bolt is not." },
+    { step_number: 5, title: "Lift out the old battery and clean the tray", instruction: "Lift with both hands — group-size batteries weigh 35–50 lb. Inspect the tray and cables: replace bolts/clamp if heavily corroded, brush terminals with a wire brush or terminal cleaner until shiny, and apply anti-corrosion grease or felt washers to the posts before reinstalling.", why_it_matters: "Corroded terminals cause voltage drop that mimics a bad battery. Cleaning now prevents repeating the job in 6 months.", tools: ["Wire brush / battery terminal cleaner"] },
+    { step_number: 6, title: "Install the new battery, reconnect in reverse", instruction: "Drop the new battery in with the same terminal orientation. Reinstall the hold-down (anti-seize on the threads). Connect POSITIVE first, then NEGATIVE. Snug the terminal clamps — tight enough you can't twist them by hand, not so tight you crush the post.", why_it_matters: "Reverse-order reconnection (positive first) avoids sparks at the chassis ground.", tools: ["10mm socket", "Anti-seize compound", "Anti-corrosion pads or grease"] },
+    { step_number: 7, title: "Verify and reset", instruction: "Start the engine — should crank strong on the first try. Check charging voltage at idle (13.8–14.6V) and after a short rev (should not exceed 15V). Reset the clock, radio presets, and any window auto-up if needed. Reinstall the fender liner.", why_it_matters: "Catching an over-charging alternator now saves you from cooking the new battery in a week.", tools: ["Multimeter"] },
+  ],
   general_repair: [
     { step_number: 1, title: "Reproduce and document the symptom", instruction: "Reproduce the issue and note exactly when it happens — cold start, after 20 min of highway, only when braking, only over bumps. Take a phone video if it's intermittent.", why_it_matters: "Half of any repair is accurate diagnosis. Vague symptoms lead to parts-cannon repairs." },
     { step_number: 2, title: "Check service info and TSBs", instruction: "Look up technical service bulletins (TSBs), recalls, and known issues for your year/make/model. There's a good chance someone has documented exactly what you're dealing with." },
@@ -425,6 +434,30 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
     ],
     torque_note: "Seat-mount bolts and seat-belt anchors are safety-critical. If you remove either, check your vehicle service manual for exact torque specs before driving.",
   },
+  battery_service: {
+    safety: [
+      "Disconnect the NEGATIVE (−) terminal first and the POSITIVE (+) last to avoid shorting a wrench across the chassis.",
+      "Wear safety glasses and remove rings/watches — a slipped wrench across the positive post can flash-weld and burn.",
+      "If the battery case is cracked, swollen, or leaking acid, use gloves, neutralize spills with baking soda + water, and ventilate the area.",
+    ],
+    tools: ["Multimeter", "10mm socket + ratchet", "Long-reach 10mm socket and extension", "Trim removal tool", "Battery terminal cleaner / wire brush", "Penetrating oil"],
+    watch_out: [
+      "Reversing terminal order on reconnect (negative first, positive last) sparks at chassis ground — always positive-first to reconnect.",
+      "Forcing rusted hold-down bolts shears the head off — soak with penetrating oil and use a long-reach socket.",
+      "Skipping the charging-system check (13.8–14.6V at idle) — a bad alternator will cook your new battery in days.",
+    ],
+    videos: [
+      { title: "Battery test before replacement", channel: "Common patterns (AI summary)", summary: "Walks through resting voltage and load testing so you don't replace a healthy battery. 5–10 minutes with a basic multimeter.", duration: "5–7 min" },
+      { title: "Wheel-well battery access (Chrysler/Dodge platforms)", channel: "Common patterns (AI summary)", summary: "Shows turning the wheel, popping fender liner clips, and reaching the battery with a long extension. Beginner-friendly once you've seen it once.", duration: "8–10 min" },
+    ],
+    time_estimate: "30–60 min (add 30 min if hold-down bolts are seized)",
+    when_to_stop: [
+      "Hold-down bolt has snapped or rounded off and you don't have an extractor — a shop can pull it without chewing the tray.",
+      "Charging voltage stays above 15V or below 13.5V at idle after install — alternator/regulator issue, not a DIY guess.",
+      "Battery case is cracked, swollen, or vented acid into the tray — neutralize, glove up, and consider professional handling.",
+    ],
+    torque_note: "Battery hold-down hardware torque is light — typically 60–100 in-lb (7–11 Nm). Do not gorilla it; over-tightening cracks the case. Terminal clamp bolts: snug + ¼ turn, never crush the post.",
+  },
   general_repair: {
     safety: [
       "Always disconnect the battery negative terminal before electrical work.",
@@ -449,4 +482,65 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
     ],
     torque_note: "Most fasteners on modern vehicles are torque-critical. Always check your vehicle service manual for exact torque specs and tightening sequence before reinstalling.",
   },
+};
+
+/* ============================================================
+   Per-workflow fallback PARTS lists. Used when the AI workflow
+   path returns no parts (or AI is unavailable) so the user always
+   sees an obvious shopping list. Keep entries short, generic, and
+   skill-appropriate; vehicle-specific part numbers live in the
+   AI-drafted path or the user's notes.
+   ============================================================ */
+export const FALLBACK_PARTS: Record<RepairWorkflow, string[]> = {
+  dent_repair: [
+    "Body filler + hardener",
+    "Color-matched paint (verify code on door-jamb sticker)",
+    "Clear coat",
+    "320 / 600 / 2000 grit sandpaper",
+  ],
+  rust_repair: [
+    "Rust converter",
+    "Etching primer",
+    "Color-matched paint (verify code on door-jamb sticker)",
+    "Rubberized undercoat spray",
+  ],
+  paint_repair: [
+    "OEM-matched touch-up paint (verify code on door-jamb sticker)",
+    "Clear coat pen or bottle",
+    "Polishing compound",
+    "Microfiber applicators",
+  ],
+  tire_service: [
+    "Replacement tire(s) — match size, load, and speed rating",
+    "Valve stem(s)",
+    "Wheel weights (if rebalancing)",
+  ],
+  fluid_leak: [
+    "Replacement gasket or seal kit (match part number)",
+    "Correct-spec fluid (check owner's manual)",
+    "Brake cleaner / degreaser",
+    "Shop rags",
+  ],
+  warning_light_diagnostic: [
+    "Suspect sensor or part identified by code (only buy after confirming)",
+    "Anti-seize compound (for O2 sensors)",
+    "Dielectric grease (for connectors)",
+  ],
+  interior_repair: [
+    "Leather/vinyl repair kit (color-matched)",
+    "Adhesive backing patch",
+    "Sealer / fabric protector",
+  ],
+  battery_service: [
+    "Replacement battery (match group size, CCA, and terminal layout)",
+    "Battery terminal cleaner / wire brush",
+    "Anti-corrosion grease or felt washer pads",
+    "Replacement hold-down hardware (if existing bolts are rusted)",
+  ],
+  general_repair: [
+    "Replacement part(s) — confirm exact part number for your VIN",
+    "Penetrating oil (e.g. PB Blaster) for rusted fasteners",
+    "Anti-seize compound",
+    "Shop rags",
+  ],
 };
