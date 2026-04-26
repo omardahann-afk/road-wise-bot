@@ -190,6 +190,7 @@ const WORKFLOW_TO_ISSUE: Record<RepairWorkflow, IssueType> = {
   fluid_leak: "fluid_leak",
   warning_light_diagnostic: "warning_light_diagnostic",
   interior_repair: "interior_repair",
+  battery_service: "battery",
   general_repair: "general_repair",
 };
 
