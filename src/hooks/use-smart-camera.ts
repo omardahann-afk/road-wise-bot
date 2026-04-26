@@ -9,6 +9,12 @@ import {
   interpretDetections,
   type InterpretedDetection,
 } from "@/lib/camera-intelligence";
+import {
+  assessSurfaceVisibility,
+  sampleEdgeStrength,
+  lowVisibilityCoach,
+  type SurfaceVisibility,
+} from "@/lib/camera-visibility";
 
 interface RawDetection {
   bbox: [number, number, number, number];
@@ -44,6 +50,7 @@ export function useSmartCamera(stepId: string) {
   const lockedClassRef = useRef<{ className: string; ttl: number } | null>(null);
   const latestInsightsRef = useRef<InterpretedDetection[]>([]);
   const latestHintRef = useRef<CoachingHint | null>(null);
+  const latestVisibilityRef = useRef<SurfaceVisibility | null>(null);
 
   const [streaming, setStreaming] = useState(false);
   const [modelLoading, setModelLoading] = useState(false);
@@ -51,6 +58,7 @@ export function useSmartCamera(stepId: string) {
   const [hint, setHint] = useState<CoachingHint | null>(null);
   const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
   const [liveInsights, setLiveInsights] = useState<InterpretedDetection[]>([]);
+  const [visibility, setVisibility] = useState<SurfaceVisibility | null>(null);
 
   useEffect(() => {
     stepIdRef.current = stepId;
