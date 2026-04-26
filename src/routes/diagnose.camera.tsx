@@ -172,6 +172,7 @@ function CameraDiagnose() {
 
         {/* Live coaching only when actively streaming pre-capture */}
         {streaming && !capturedPreview && <CoachingOverlay hint={hint} />}
+        {streaming && !capturedPreview && <LowVisibilityBadge visibility={visibility} />}
 
         {/* Captured preview */}
         {capturedPreview && (
