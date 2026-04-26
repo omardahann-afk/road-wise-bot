@@ -101,8 +101,7 @@ function CameraDiagnose() {
         metadata: {
           overall_confidence: result.overall_confidence ?? null,
           components_count: result.likely_components?.length ?? 0,
-          low_visibility:
-            captureVisibility?.level === "low" || captureVisibility?.level === "medium",
+          low_visibility: captureVisibility?.level === "low",
         },
       });
 
