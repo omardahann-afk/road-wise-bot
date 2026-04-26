@@ -387,6 +387,7 @@ export async function buildWorkflow(input: BuildWorkflowInput): Promise<Generate
     real_world_tips: Array.isArray(ai.real_world_tips) ? ai.real_world_tips.slice(0, 6) : summarizeInsights(input.real_world_insights),
     steps,
     generated_at: Date.now(),
+    pricing_source: "engine",
   };
 }
 
