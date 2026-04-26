@@ -483,3 +483,64 @@ export const GUIDE_META: Record<RepairWorkflow, RepairGuideMeta> = {
     torque_note: "Most fasteners on modern vehicles are torque-critical. Always check your vehicle service manual for exact torque specs and tightening sequence before reinstalling.",
   },
 };
+
+/* ============================================================
+   Per-workflow fallback PARTS lists. Used when the AI workflow
+   path returns no parts (or AI is unavailable) so the user always
+   sees an obvious shopping list. Keep entries short, generic, and
+   skill-appropriate; vehicle-specific part numbers live in the
+   AI-drafted path or the user's notes.
+   ============================================================ */
+export const FALLBACK_PARTS: Record<RepairWorkflow, string[]> = {
+  dent_repair: [
+    "Body filler + hardener",
+    "Color-matched paint (verify code on door-jamb sticker)",
+    "Clear coat",
+    "320 / 600 / 2000 grit sandpaper",
+  ],
+  rust_repair: [
+    "Rust converter",
+    "Etching primer",
+    "Color-matched paint (verify code on door-jamb sticker)",
+    "Rubberized undercoat spray",
+  ],
+  paint_repair: [
+    "OEM-matched touch-up paint (verify code on door-jamb sticker)",
+    "Clear coat pen or bottle",
+    "Polishing compound",
+    "Microfiber applicators",
+  ],
+  tire_service: [
+    "Replacement tire(s) — match size, load, and speed rating",
+    "Valve stem(s)",
+    "Wheel weights (if rebalancing)",
+  ],
+  fluid_leak: [
+    "Replacement gasket or seal kit (match part number)",
+    "Correct-spec fluid (check owner's manual)",
+    "Brake cleaner / degreaser",
+    "Shop rags",
+  ],
+  warning_light_diagnostic: [
+    "Suspect sensor or part identified by code (only buy after confirming)",
+    "Anti-seize compound (for O2 sensors)",
+    "Dielectric grease (for connectors)",
+  ],
+  interior_repair: [
+    "Leather/vinyl repair kit (color-matched)",
+    "Adhesive backing patch",
+    "Sealer / fabric protector",
+  ],
+  battery_service: [
+    "Replacement battery (match group size, CCA, and terminal layout)",
+    "Battery terminal cleaner / wire brush",
+    "Anti-corrosion grease or felt washer pads",
+    "Replacement hold-down hardware (if existing bolts are rusted)",
+  ],
+  general_repair: [
+    "Replacement part(s) — confirm exact part number for your VIN",
+    "Penetrating oil (e.g. PB Blaster) for rusted fasteners",
+    "Anti-seize compound",
+    "Shop rags",
+  ],
+};
