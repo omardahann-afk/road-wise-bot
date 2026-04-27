@@ -382,13 +382,20 @@ function CameraDiagnose() {
         {streaming && !capturedPreview && <CoachingOverlay hint={hint} />}
         {streaming && !capturedPreview && <LowVisibilityBadge visibility={visibility} />}
 
-        {/* Captured preview */}
+        {/* Captured preview + damage overlay */}
         {capturedPreview && (
-          <img
-            src={capturedPreview}
-            alt="Captured frame"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <>
+            <img
+              ref={previewImgRef}
+              src={capturedPreview}
+              alt="Captured frame"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <canvas
+              ref={damageOverlayRef}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+          </>
         )}
 
         {/* Idle state — clear "what to do" CTA */}
