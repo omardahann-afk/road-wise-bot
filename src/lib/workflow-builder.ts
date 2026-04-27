@@ -400,7 +400,7 @@ export async function buildWorkflow(input: BuildWorkflowInput): Promise<Generate
     diy_possible: Boolean(ai.diy_possible) && pricing.diy_possible && !mechanicRecommended,
     mechanic_recommended: mechanicRecommended,
     tools_required: tools,
-    parts_required: Array.isArray(ai.parts_required) ? ai.parts_required.slice(0, 10) : [],
+    parts_required: mergedParts.slice(0, 10),
     safety_warnings: hardenedSafety.warnings,
     real_world_tips: Array.isArray(ai.real_world_tips) ? ai.real_world_tips.slice(0, 6) : summarizeInsights(input.real_world_insights),
     steps,
