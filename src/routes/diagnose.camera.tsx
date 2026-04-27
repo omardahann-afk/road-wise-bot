@@ -504,7 +504,15 @@ function CameraDiagnose() {
         ) : null}
       </div>
 
-      {/* Manual assist — keeps diagnose honest when the camera struggles
+      {/* Browser-side damage detection chips (additive — independent of AI) */}
+      {capturedPreview && (
+        <DamageChips
+          candidates={damage}
+          onAdd={handleAddDamage}
+          added={addedDamage}
+        />
+      )}
+
           (dark paint, reflections, low light). Mirrors inspection behavior. */}
       {(streaming || capturedPreview) && (
         <ManualDamageMark
