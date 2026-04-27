@@ -372,6 +372,21 @@ export async function buildWorkflow(input: BuildWorkflowInput): Promise<Generate
     ...(ai.tools_required ?? []),
   ])).slice(0, 10);
 
+  // Merge AI parts with deterministic fallback parts so the canonical
+  // workflow-specific essentials (e.g. anti-corrosion grease, hold-down
+  // hardware for battery_service) are always present even if AI omits them.
+  const fallbackParts = FALLBACK_PARTS[input.workflow] ?? [];
+  const aiParts = Array.isArray(ai.parts_required) ? ai.parts_required.filter(Boolean) : [];
+  const partsLower = new Set<string>();
+  const mergedParts: string[] = [];
+  for (const p of [...aiParts, ...fallbackParts]) {
+    const key = p.toLowerCase().trim();
+    if (key && !partsLower.has(key)) {
+      partsLower.add(key);
+      mergedParts.push(p);
+    }
+  }
+
   return {
     workflow_id: makeWorkflowId(input),
     source: "ai",
