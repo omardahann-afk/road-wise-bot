@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-r
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
 import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
+import { DamageChips } from "@/components/diagnostics/damage-chips";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +16,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
 import type { SurfaceVisibility } from "@/lib/camera-visibility";
 import type { Finding } from "@/lib/valuation";
+import { classifyRepair } from "@/lib/valuation";
+import {
+  detectDamage,
+  damageToWorkflow,
+  type DamageCandidate,
+} from "@/lib/damage-detection";
 import { Trash2 } from "lucide-react";
 import {
   Camera,
