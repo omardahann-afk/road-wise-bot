@@ -81,33 +81,62 @@ export async function detectDamage(
   source: HTMLCanvasElement | HTMLImageElement,
   options: { maxCandidates?: number } = {},
 ): Promise<DamageCandidate[]> {
-  const max = options.maxCandidates ?? 4;
   const stats = readStats(source);
   if (!stats) return [];
+  return detectDamageFromStats(stats, options);
+}
 
+/**
+ * Test-friendly entry point: run the same heuristic pipeline against a
+ * pre-built Stats object (raw luma + dimensions). Lets unit tests exercise
+ * the detection logic without a DOM canvas.
+ */
+export function detectDamageFromStats(
+  stats: Stats,
+  options: { maxCandidates?: number } = {},
+): DamageCandidate[] {
+  const max = options.maxCandidates ?? 4;
   const candidates: DamageCandidate[] = [];
 
-  // --- 1. Dark-mark / paint-transfer / scrape detection on light panels ---
   const darkPatches = findDarkPatches(stats);
   for (const p of darkPatches) {
     const cand = classifyDarkPatch(p, stats);
     if (cand) candidates.push(cand);
   }
+  for (const hit of findCrackLines(stats)) candidates.push(hit);
+  for (const hit of findPanelGaps(stats)) candidates.push(hit);
 
-  // --- 2. Long high-contrast lines → cracks / split bumper edges ---
-  const lineHits = findCrackLines(stats);
-  for (const hit of lineHits) candidates.push(hit);
-
-  // --- 3. Vertical seams in lower body → panel gaps / bumper misalignment ---
-  const gapHits = findPanelGaps(stats);
-  for (const hit of gapHits) candidates.push(hit);
-
-  // De-dupe overlapping candidates of the same type — keep the higher confidence.
   const merged = mergeOverlapping(candidates);
+  return merged.sort((a, b) => b.confidence - a.confidence).slice(0, max);
+}
 
-  return merged
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, max);
+/**
+ * Build a Stats object from a raw luma buffer. Used by tests and any caller
+ * that already has decoded pixel data. Sets the internal scale to 1 so bbox
+ * coordinates map 1:1 to the input grid.
+ */
+export function buildStatsFromLuma(W: number, H: number, luma: Float32Array): Stats {
+  let sum = 0;
+  for (let i = 0; i < W * H; i++) sum += luma[i];
+  const mean = sum / (W * H);
+  let varSum = 0;
+  for (let i = 0; i < W * H; i++) {
+    const d = luma[i] - mean;
+    varSum += d * d;
+  }
+  const std = Math.sqrt(varSum / (W * H));
+  const result: Stats & { _scale: number; _srcW: number; _srcH: number } = {
+    W,
+    H,
+    luma,
+    meanLuma: mean,
+    stdLuma: std,
+    _scale: 1,
+    _srcW: W,
+    _srcH: H,
+  };
+  return result;
+}
 }
 
 /* ---------- read pixels ---------- */
