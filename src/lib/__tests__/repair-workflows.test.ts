@@ -357,5 +357,5 @@ for (const c of CASES) {
         }
       });
     });
-  });
+  }
 }
