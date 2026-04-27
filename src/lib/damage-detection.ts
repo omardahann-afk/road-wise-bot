@@ -137,7 +137,6 @@ export function buildStatsFromLuma(W: number, H: number, luma: Float32Array): St
   };
   return result;
 }
-}
 
 /* ---------- read pixels ---------- */
 
