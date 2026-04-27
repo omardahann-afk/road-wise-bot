@@ -2,18 +2,15 @@ import { useState } from "react";
 import { Plus, ScanEye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Finding } from "@/lib/valuation";
-
-const MANUAL_OPTIONS: { label: string; severity: Finding["severity"] }[] = [
-  { label: "Dent (you spotted it)", severity: "low" },
-  { label: "Scratch (you spotted it)", severity: "low" },
-  { label: "Rust spot (you spotted it)", severity: "medium" },
-  { label: "Paint mismatch (you spotted it)", severity: "low" },
-];
+import { MANUAL_DAMAGE_OPTIONS } from "@/lib/damage-detection";
 
 /**
  * Rendered under the live detection chips. Lets the user mark damage the
  * camera missed — improves learning signal AND keeps the inspection honest
  * when surface visibility is low.
+ *
+ * Options are sourced from MANUAL_DAMAGE_OPTIONS so the manual marks line up
+ * with the same damage taxonomy used by the automated damage-detection layer.
  */
 export function ManualDamageMark({
   onMark,
@@ -34,9 +31,10 @@ export function ManualDamageMark({
           <ScanEye className="h-4 w-4" />
         </span>
         <span className="flex-1 text-xs">
-          <span className="block font-bold">See something the camera missed?</span>
+          <span className="block font-bold">Mark visible damage</span>
           <span className="block text-[10px] text-muted-foreground">
-            {hint ?? "Tap to add a dent, scratch, rust spot, or paint mismatch you can see in person."}
+            {hint ??
+              "Tap to add a scrape, crack, dent, paint transfer, rust spot, panel gap, or broken bumper clip."}
           </span>
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider text-warning">
@@ -45,7 +43,7 @@ export function ManualDamageMark({
       </button>
       {open && (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {MANUAL_OPTIONS.map((opt) => (
+          {MANUAL_DAMAGE_OPTIONS.map((opt) => (
             <Button
               key={opt.label}
               size="sm"
