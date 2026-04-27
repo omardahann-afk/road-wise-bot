@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { CameraAnalysisResult } from "@/components/diagnostics/camera-analysis-r
 import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
 import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
+import { DamageChips } from "@/components/diagnostics/damage-chips";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +16,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
 import type { SurfaceVisibility } from "@/lib/camera-visibility";
 import type { Finding } from "@/lib/valuation";
+import { classifyRepair } from "@/lib/valuation";
+import {
+  detectDamage,
+  damageToWorkflow,
+  type DamageCandidate,
+} from "@/lib/damage-detection";
 import { Trash2 } from "lucide-react";
 import {
   Camera,
@@ -42,12 +49,17 @@ const FRAMING_TIPS = [
 ];
 
 function CameraDiagnose() {
+  const navigate = useNavigate();
   const [aiBusy, setAiBusy] = useState(false);
   const [aiResult, setAiResult] = useState<AiCameraResult | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [savingReport, setSavingReport] = useState(false);
   const [manualFindings, setManualFindings] = useState<Finding[]>([]);
   const [lastVisibility, setLastVisibility] = useState<SurfaceVisibility | null>(null);
+  const [damage, setDamage] = useState<DamageCandidate[]>([]);
+  const [addedDamage, setAddedDamage] = useState<Set<string>>(new Set());
+  const damageOverlayRef = useRef<HTMLCanvasElement>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
   const { user } = useAuth();
 
   const {
@@ -67,6 +79,99 @@ function CameraDiagnose() {
     loadUploadedImage,
     clearCapturedPreview,
   } = useSmartCamera("front_exterior");
+
+  // Run browser-side damage detection whenever a new photo is captured/uploaded.
+  useEffect(() => {
+    if (!capturedPreview) {
+      setDamage([]);
+      setAddedDamage(new Set());
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = async () => {
+      try {
+        const found = await detectDamage(img);
+        if (cancelled) return;
+        setDamage(found);
+        // Learning signal — record damage-detection pass.
+        if (found.length > 0) {
+          void recordLearningEvent({
+            step_id: "diagnose_camera",
+            paint_tone: lastVisibility?.paintTone ?? null,
+            surface_visibility: lastVisibility?.level ?? null,
+            issue_detected: found[0].label,
+            detection_confidence: found[0].confidence,
+            source: "ai_finding",
+            metadata: {
+              damage_layer: "browser_heuristic",
+              candidates_count: found.length,
+              damage_types: found.map((d) => d.damage_type),
+            },
+          });
+        }
+      } catch (err) {
+        console.warn("Damage detection failed", err);
+      }
+    };
+    img.src = capturedPreview;
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capturedPreview]);
+
+  // Paint damage bboxes onto the overlay canvas every time damage or the
+  // rendered preview image size changes. Coordinates are in source-image
+  // pixels — the canvas is sized to match those for 1:1 mapping.
+  useEffect(() => {
+    const canvas = damageOverlayRef.current;
+    const img = previewImgRef.current;
+    if (!canvas) return;
+    if (!img || damage.length === 0) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+    const draw = () => {
+      const W = img.naturalWidth || img.width;
+      const H = img.naturalHeight || img.height;
+      if (!W || !H) return;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineWidth = Math.max(2, Math.round(W / 200));
+      ctx.font = `${Math.max(12, Math.round(W / 50))}px sans-serif`;
+      for (const c of damage) {
+        const [x, y, w, h] = c.bbox;
+        const isHigh = c.severity === "high" || c.severity === "critical";
+        // Dashed for crack/panel-gap (uncertain shapes), solid for scrape clusters.
+        const dashed =
+          c.damage_type === "cracked_bumper" ||
+          c.damage_type === "panel_gap" ||
+          c.damage_type === "bumper_clip";
+        ctx.setLineDash(dashed ? [12, 8] : []);
+        ctx.strokeStyle = isHigh ? "rgba(239, 68, 68, 0.95)" : "rgba(245, 158, 11, 0.95)";
+        ctx.fillStyle = isHigh ? "rgba(239, 68, 68, 0.12)" : "rgba(245, 158, 11, 0.12)";
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+        const label = `${c.label} ${Math.round(c.confidence * 100)}%`;
+        const padding = 6;
+        const textW = ctx.measureText(label).width + padding * 2;
+        const textH = Math.max(18, Math.round(W / 36));
+        const labelY = Math.max(textH, y - 4);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.78)";
+        ctx.fillRect(x, labelY - textH, textW, textH);
+        ctx.fillStyle = isHigh ? "rgba(252, 165, 165, 1)" : "rgba(253, 224, 71, 1)";
+        ctx.fillText(label, x + padding, labelY - 5);
+      }
+    };
+    if (img.complete) draw();
+    else img.addEventListener("load", draw, { once: true });
+  }, [damage, capturedPreview]);
 
   async function runAnalysis(payload: { dataUrl: string; detections: { class: string; score: number }[]; visibility?: SurfaceVisibility | null }) {
     setAiResult(null);
@@ -207,6 +312,45 @@ function CameraDiagnose() {
     setManualFindings((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function handleAddDamage(c: DamageCandidate) {
+    if (addedDamage.has(c.damage_type)) {
+      toast.info("Already added");
+      return;
+    }
+    const finding: Finding = {
+      step: "diagnose_camera",
+      category: "exterior",
+      issue: c.label,
+      severity: c.severity,
+      notes: `${c.note} (${c.location}, ${Math.round(c.confidence * 100)}% confidence, browser-detected)`,
+    };
+    setManualFindings((prev) => [...prev, finding]);
+    setAddedDamage((prev) => new Set(prev).add(c.damage_type));
+    toast.success(`Added: ${c.label}`);
+    void recordLearningEvent({
+      step_id: "diagnose_camera",
+      paint_tone: lastVisibility?.paintTone ?? null,
+      surface_visibility: lastVisibility?.level ?? null,
+      issue_detected: c.label,
+      issue_confirmed_by_user: true,
+      detection_confidence: c.confidence,
+      source: "manual_mark",
+      metadata: {
+        damage_layer: "browser_heuristic_confirmed",
+        damage_type: c.damage_type,
+        suggested_workflow: c.suggestedWorkflow,
+      },
+    });
+    // Hand off to the matching repair workflow — confirm via classifyRepair so
+    // it stays consistent with the rest of the app's routing logic.
+    const handoff = classifyRepair(finding);
+    const workflow = handoff.workflow !== "general_repair" ? handoff.workflow : damageToWorkflow(c.damage_type);
+    void navigate({
+      to: "/repair",
+      search: { workflow, issue: c.label, severity: c.severity },
+    });
+  }
+
   return (
     <AppShell title="Camera diagnose" showBack>
       <section className="mb-4">
@@ -238,13 +382,20 @@ function CameraDiagnose() {
         {streaming && !capturedPreview && <CoachingOverlay hint={hint} />}
         {streaming && !capturedPreview && <LowVisibilityBadge visibility={visibility} />}
 
-        {/* Captured preview */}
+        {/* Captured preview + damage overlay */}
         {capturedPreview && (
-          <img
-            src={capturedPreview}
-            alt="Captured frame"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <>
+            <img
+              ref={previewImgRef}
+              src={capturedPreview}
+              alt="Captured frame"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <canvas
+              ref={damageOverlayRef}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+          </>
         )}
 
         {/* Idle state — clear "what to do" CTA */}
@@ -352,6 +503,15 @@ function CameraDiagnose() {
           </>
         ) : null}
       </div>
+
+      {/* Browser-side damage detection chips (additive — independent of AI) */}
+      {capturedPreview && (
+        <DamageChips
+          candidates={damage}
+          onAdd={handleAddDamage}
+          added={addedDamage}
+        />
+      )}
 
       {/* Manual assist — keeps diagnose honest when the camera struggles
           (dark paint, reflections, low light). Mirrors inspection behavior. */}

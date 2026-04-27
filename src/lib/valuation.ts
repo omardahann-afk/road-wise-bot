@@ -368,7 +368,8 @@ export function classifyRepair(f: Finding): RepairHandoff {
 
   if (/dent|ding|crease/.test(t)) workflow = "dent_repair";
   else if (/rust|corros|oxid/.test(t)) workflow = "rust_repair";
-  else if (/scratch|paint|chip|clear ?coat|repaint|mismatch|swirl/.test(t)) workflow = "paint_repair";
+  else if (/scrape|scratch|paint|chip|clear ?coat|repaint|mismatch|swirl|paint transfer/.test(t)) workflow = "paint_repair";
+  else if (/crack|split|panel gap|misalign|bumper clip|broken clip|cosmetic/.test(t)) workflow = "general_repair";
   else if (f.category === "tires" || /tire|tread|sidewall|wheel|rim/.test(t)) workflow = "tire_service";
   else if (/battery|won['’]?t start|cranks slow|dead battery|no crank/.test(t)) workflow = "battery_service";
   else if (/leak|seep|drip|fluid|coolant|oil pan|gasket/.test(t)) workflow = "fluid_leak";
