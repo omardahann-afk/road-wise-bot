@@ -513,6 +513,7 @@ function CameraDiagnose() {
         />
       )}
 
+      {/* Manual assist — keeps diagnose honest when the camera struggles
           (dark paint, reflections, low light). Mirrors inspection behavior. */}
       {(streaming || capturedPreview) && (
         <ManualDamageMark
