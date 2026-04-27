@@ -312,6 +312,45 @@ function CameraDiagnose() {
     setManualFindings((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function handleAddDamage(c: DamageCandidate) {
+    if (addedDamage.has(c.damage_type)) {
+      toast.info("Already added");
+      return;
+    }
+    const finding: Finding = {
+      step: "diagnose_camera",
+      category: "exterior",
+      issue: c.label,
+      severity: c.severity,
+      notes: `${c.note} (${c.location}, ${Math.round(c.confidence * 100)}% confidence, browser-detected)`,
+    };
+    setManualFindings((prev) => [...prev, finding]);
+    setAddedDamage((prev) => new Set(prev).add(c.damage_type));
+    toast.success(`Added: ${c.label}`);
+    void recordLearningEvent({
+      step_id: "diagnose_camera",
+      paint_tone: lastVisibility?.paintTone ?? null,
+      surface_visibility: lastVisibility?.level ?? null,
+      issue_detected: c.label,
+      issue_confirmed_by_user: true,
+      detection_confidence: c.confidence,
+      source: "manual_mark",
+      metadata: {
+        damage_layer: "browser_heuristic_confirmed",
+        damage_type: c.damage_type,
+        suggested_workflow: c.suggestedWorkflow,
+      },
+    });
+    // Hand off to the matching repair workflow — confirm via classifyRepair so
+    // it stays consistent with the rest of the app's routing logic.
+    const handoff = classifyRepair(finding);
+    const workflow = handoff.workflow !== "general_repair" ? handoff.workflow : damageToWorkflow(c.damage_type);
+    void navigate({
+      to: "/repair",
+      search: { workflow, issue: c.label, severity: c.severity },
+    });
+  }
+
   return (
     <AppShell title="Camera diagnose" showBack>
       <section className="mb-4">
