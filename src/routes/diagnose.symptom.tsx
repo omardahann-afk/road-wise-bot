@@ -6,11 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, Stethoscope } from "lucide-react";
+import { Loader2, Sparkles, Stethoscope, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { callAi } from "@/lib/ai";
+import { callAiSafe, AI_UNAVAILABLE_MESSAGE } from "@/lib/ai";
+import { localSymptomDiagnose } from "@/lib/symptom-local";
 import { severityClass } from "@/lib/severity";
 import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
@@ -48,6 +49,7 @@ function SymptomChecker() {
   const [vehicle, setVehicle] = useState({ year: "", make: "", model: "" });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AiSymptomResult | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
   const { user } = useAuth();
   const activeVehicle = useActiveVehicleProfile();
 
@@ -56,41 +58,67 @@ function SymptomChecker() {
     if (!symptoms.trim()) return;
     setBusy(true);
     setResult(null);
+    setUsedFallback(false);
+
+    // Always have a local result ready — if AI succeeds we replace it.
+    const local = localSymptomDiagnose(symptoms, conditions);
+
     try {
-      const ai = await callAi<AiSymptomResult>(
+      const ai = await callAiSafe<AiSymptomResult>(
         "symptom",
         { symptoms, conditions },
         vehicle.make ? vehicle : null,
       );
-      setResult(ai);
+
+      let final: AiSymptomResult;
+      let fellBack = false;
+      if (ai.ok) {
+        final = ai.data;
+      } else {
+        final = local;
+        fellBack = true;
+        toast.info(AI_UNAVAILABLE_MESSAGE);
+      }
+      setResult(final);
+      setUsedFallback(fellBack);
+
       if (user) {
         // Compute deterministic pricing from top likely issue, persist for history.
-        const top = ai.possible_issues?.[0];
+        const top = final.possible_issues?.[0];
         const pricingSnapshot = top
           ? estimateRepairCost({
               issue_type: classifyIssueType(top.title),
-              severity: ((["info","low","medium","high","critical"].includes(ai.severity)
-                ? ai.severity : "medium") as Severity),
+              severity: ((["info","low","medium","high","critical"].includes(final.severity)
+                ? final.severity : "medium") as Severity),
               vehicle_year: vehicle.year ? Number(vehicle.year) : null,
               vehicle_make: vehicle.make || null,
               vehicle_model: vehicle.model || null,
               region: "canada",
             })
           : null;
-        await supabase.from("diagnostics").insert({
-          user_id: user.id,
-          mode: "symptom",
-          input: { symptoms, conditions, vehicle },
-          ai_output: { ...ai, pricing: pricingSnapshot } as never,
-          severity:
-            (["info", "low", "medium", "high", "critical"].includes(ai.severity)
-              ? ai.severity
-              : "medium") as "info" | "low" | "medium" | "high" | "critical",
-          summary: ai.summary,
-        });
+        try {
+          await supabase.from("diagnostics").insert({
+            user_id: user.id,
+            mode: "symptom",
+            input: { symptoms, conditions, vehicle },
+            ai_output: { ...final, pricing: pricingSnapshot, source: fellBack ? "local_fallback" : "ai" } as never,
+            severity:
+              (["info", "low", "medium", "high", "critical"].includes(final.severity)
+                ? final.severity
+                : "medium") as "info" | "low" | "medium" | "high" | "critical",
+            summary: final.summary,
+          });
+        } catch (persistErr) {
+          // Persistence failure must never block showing the result.
+          console.warn("Symptom persist failed:", persistErr);
+        }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Diagnosis failed");
+      // Last-resort safety net — should be unreachable given callAiSafe.
+      console.error("Symptom flow unexpected error:", err);
+      setResult(local);
+      setUsedFallback(true);
+      toast.info(AI_UNAVAILABLE_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -174,6 +202,12 @@ function SymptomChecker() {
       {result && (
         <Card className="mt-6">
           <CardContent className="space-y-4 p-4">
+            {usedFallback && (
+              <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <span>{AI_UNAVAILABLE_MESSAGE}</span>
+              </div>
+            )}
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm">{result.summary}</p>
               <span

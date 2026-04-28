@@ -11,6 +11,8 @@ import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
 import { DamageChips } from "@/components/diagnostics/damage-chips";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
+import { localCameraAnalyze } from "@/lib/camera-local";
+import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
@@ -216,7 +218,16 @@ function CameraDiagnose() {
         await persistDiagnostic(result);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "AI analysis failed");
+      // AI failed — synthesize a result from on-device damage detection +
+      // object detections so the screen never goes blank.
+      console.warn("Camera AI failed, using local fallback:", error);
+      const local = localCameraAnalyze({
+        detections: payload.detections,
+        damage,
+        visibility: captureVisibility,
+      });
+      setAiResult(local);
+      toast.info(AI_UNAVAILABLE_MESSAGE);
     } finally {
       setAiBusy(false);
     }

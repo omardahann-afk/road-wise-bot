@@ -11,6 +11,9 @@ import { describe, expect, it, mock, beforeAll } from "bun:test";
 let aiBehavior: "success" | "fail" = "fail";
 
 await mock.module("@/lib/ai", () => ({
+  AI_DEFAULT_TIMEOUT_MS: 20_000,
+  AI_UNAVAILABLE_MESSAGE: "AI enhancement is unavailable. Showing reliable basic guidance.",
+  callAiSafe: async () => ({ ok: false, reason: "network", message: "fail" }),
   callAi: async () => {
     if (aiBehavior === "fail") {
       throw new Error("Edge Function returned a non-2xx status code");
