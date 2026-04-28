@@ -79,11 +79,11 @@ export async function callAiSafe<T = unknown>(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const lower = message.toLowerCase();
-    let reason: AiSafeResult<T> extends { ok: false; reason: infer R } ? R : never;
-    if (/timeout|timed out/.test(lower)) reason = "timeout";
-    else if (/402|credit|quota|rate/.test(lower)) reason = "quota";
-    else if (/network|fetch|failed to fetch|edge function|non-2xx/.test(lower)) reason = "network";
-    else reason = "unknown";
+    const reason: "timeout" | "quota" | "network" | "unknown" =
+      /timeout|timed out/.test(lower) ? "timeout"
+      : /402|credit|quota|rate/.test(lower) ? "quota"
+      : /network|fetch|failed to fetch|edge function|non-2xx/.test(lower) ? "network"
+      : "unknown";
     return { ok: false, reason, message };
   }
 }
