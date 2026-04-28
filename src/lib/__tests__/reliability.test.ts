@@ -1,74 +1,32 @@
 // ============================================================================
 // Reliability tests — every diagnosis flow must work without AI.
 //
-// Mocks `@/lib/ai` so callAi/callAiSafe simulate the various failure modes
-// we expect in production (timeout, quota, network). The local fallbacks
-// must always return a renderable result.
+// Verifies:
+//   - The shared AI fallback message + finite timeout exist.
+//   - Local symptom + camera fallbacks always return renderable, JSON-safe results.
+//   - The OBD2 deterministic dataset answers without any AI call.
 //
 // Run: bun test src/lib/__tests__/reliability.test.ts
 // ============================================================================
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { localSymptomDiagnose } from "@/lib/symptom-local";
 import { localCameraAnalyze } from "@/lib/camera-local";
 import { lookupObd2, inferObd2Stub } from "@/lib/obd2-dataset";
 import { estimateRepairCost } from "@/lib/pricing";
-
-// ---- Mock callAi to simulate failures ------------------------------------
-let aiBehavior: "timeout" | "quota" | "network" | "ok" = "network";
-await mock.module("@/lib/ai", () => ({
-  AI_DEFAULT_TIMEOUT_MS: 20_000,
-  AI_UNAVAILABLE_MESSAGE: "AI enhancement is unavailable. Showing reliable basic guidance.",
-  callAi: async () => {
-    if (aiBehavior === "ok") return { summary: "ai" } as never;
-    if (aiBehavior === "timeout") throw new Error("AI request timed out");
-    if (aiBehavior === "quota") throw new Error("402 quota exceeded");
-    throw new Error("Edge Function returned a non-2xx status code");
-  },
-  callAiSafe: async () => {
-    if (aiBehavior === "ok") return { ok: true, data: { summary: "ai" } };
-    const reason =
-      aiBehavior === "timeout" ? "timeout"
-      : aiBehavior === "quota" ? "quota"
-      : "network";
-    return { ok: false, reason, message: "fail" };
-  },
-}));
-
-const ai = await import("@/lib/ai");
+import { AI_UNAVAILABLE_MESSAGE, AI_DEFAULT_TIMEOUT_MS } from "@/lib/ai";
 
 describe("Reliability — AI is optional enhancement", () => {
-  describe("callAiSafe", () => {
-    it("classifies timeout failures", async () => {
-      aiBehavior = "timeout";
-      const r = await ai.callAiSafe("symptom", {});
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.reason).toBe("timeout");
-    });
-
-    it("classifies quota failures", async () => {
-      aiBehavior = "quota";
-      const r = await ai.callAiSafe("symptom", {});
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.reason).toBe("quota");
-    });
-
-    it("classifies network failures", async () => {
-      aiBehavior = "network";
-      const r = await ai.callAiSafe("symptom", {});
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.reason).toBe("network");
-    });
-
-    it("returns data when AI succeeds", async () => {
-      aiBehavior = "ok";
-      const r = await ai.callAiSafe("symptom", {});
-      expect(r.ok).toBe(true);
-    });
-
+  describe("Shared AI fallback contract", () => {
     it("publishes a single user-facing fallback message", () => {
-      expect(ai.AI_UNAVAILABLE_MESSAGE).toMatch(/AI enhancement is unavailable/);
+      expect(AI_UNAVAILABLE_MESSAGE).toMatch(/AI enhancement is unavailable/);
+    });
+
+    it("enforces a finite default AI timeout", () => {
+      expect(AI_DEFAULT_TIMEOUT_MS).toBeGreaterThan(0);
+      expect(AI_DEFAULT_TIMEOUT_MS).toBeLessThanOrEqual(60_000);
     });
   });
+
 
   describe("Symptom — local fallback", () => {
     it("returns a usable result even with empty input", () => {
