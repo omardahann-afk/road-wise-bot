@@ -218,7 +218,16 @@ function CameraDiagnose() {
         await persistDiagnostic(result);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "AI analysis failed");
+      // AI failed — synthesize a result from on-device damage detection +
+      // object detections so the screen never goes blank.
+      console.warn("Camera AI failed, using local fallback:", error);
+      const local = localCameraAnalyze({
+        detections: payload.detections,
+        damage,
+        visibility: captureVisibility,
+      });
+      setAiResult(local);
+      toast.info(AI_UNAVAILABLE_MESSAGE);
     } finally {
       setAiBusy(false);
     }
