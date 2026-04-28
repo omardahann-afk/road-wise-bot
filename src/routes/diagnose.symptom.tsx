@@ -49,6 +49,7 @@ function SymptomChecker() {
   const [vehicle, setVehicle] = useState({ year: "", make: "", model: "" });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AiSymptomResult | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
   const { user } = useAuth();
   const activeVehicle = useActiveVehicleProfile();
 
@@ -57,41 +58,67 @@ function SymptomChecker() {
     if (!symptoms.trim()) return;
     setBusy(true);
     setResult(null);
+    setUsedFallback(false);
+
+    // Always have a local result ready — if AI succeeds we replace it.
+    const local = localSymptomDiagnose(symptoms, conditions);
+
     try {
-      const ai = await callAi<AiSymptomResult>(
+      const ai = await callAiSafe<AiSymptomResult>(
         "symptom",
         { symptoms, conditions },
         vehicle.make ? vehicle : null,
       );
-      setResult(ai);
+
+      let final: AiSymptomResult;
+      let fellBack = false;
+      if (ai.ok) {
+        final = ai.data;
+      } else {
+        final = local;
+        fellBack = true;
+        toast.info(AI_UNAVAILABLE_MESSAGE);
+      }
+      setResult(final);
+      setUsedFallback(fellBack);
+
       if (user) {
         // Compute deterministic pricing from top likely issue, persist for history.
-        const top = ai.possible_issues?.[0];
+        const top = final.possible_issues?.[0];
         const pricingSnapshot = top
           ? estimateRepairCost({
               issue_type: classifyIssueType(top.title),
-              severity: ((["info","low","medium","high","critical"].includes(ai.severity)
-                ? ai.severity : "medium") as Severity),
+              severity: ((["info","low","medium","high","critical"].includes(final.severity)
+                ? final.severity : "medium") as Severity),
               vehicle_year: vehicle.year ? Number(vehicle.year) : null,
               vehicle_make: vehicle.make || null,
               vehicle_model: vehicle.model || null,
               region: "canada",
             })
           : null;
-        await supabase.from("diagnostics").insert({
-          user_id: user.id,
-          mode: "symptom",
-          input: { symptoms, conditions, vehicle },
-          ai_output: { ...ai, pricing: pricingSnapshot } as never,
-          severity:
-            (["info", "low", "medium", "high", "critical"].includes(ai.severity)
-              ? ai.severity
-              : "medium") as "info" | "low" | "medium" | "high" | "critical",
-          summary: ai.summary,
-        });
+        try {
+          await supabase.from("diagnostics").insert({
+            user_id: user.id,
+            mode: "symptom",
+            input: { symptoms, conditions, vehicle },
+            ai_output: { ...final, pricing: pricingSnapshot, source: fellBack ? "local_fallback" : "ai" } as never,
+            severity:
+              (["info", "low", "medium", "high", "critical"].includes(final.severity)
+                ? final.severity
+                : "medium") as "info" | "low" | "medium" | "high" | "critical",
+            summary: final.summary,
+          });
+        } catch (persistErr) {
+          // Persistence failure must never block showing the result.
+          console.warn("Symptom persist failed:", persistErr);
+        }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Diagnosis failed");
+      // Last-resort safety net — should be unreachable given callAiSafe.
+      console.error("Symptom flow unexpected error:", err);
+      setResult(local);
+      setUsedFallback(true);
+      toast.info(AI_UNAVAILABLE_MESSAGE);
     } finally {
       setBusy(false);
     }
