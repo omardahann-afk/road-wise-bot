@@ -11,6 +11,8 @@ import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
 import { DamageChips } from "@/components/diagnostics/damage-chips";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
+import { localCameraAnalyze } from "@/lib/camera-local";
+import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
