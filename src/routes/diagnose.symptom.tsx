@@ -202,6 +202,12 @@ function SymptomChecker() {
       {result && (
         <Card className="mt-6">
           <CardContent className="space-y-4 p-4">
+            {usedFallback && (
+              <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <span>{AI_UNAVAILABLE_MESSAGE}</span>
+              </div>
+            )}
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm">{result.summary}</p>
               <span
