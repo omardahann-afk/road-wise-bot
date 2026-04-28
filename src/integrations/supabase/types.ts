@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      diagnosis_events: {
+        Row: {
+          ai_used: boolean
+          confidence: number | null
+          created_at: string
+          estimated_cost_high: number | null
+          estimated_cost_low: number | null
+          fallback_used: boolean
+          id: string
+          input_type: string
+          predicted_issue: string | null
+          safe_to_drive: string | null
+          severity: string | null
+          user_id: string
+          user_input: Json
+          vehicle_id: string | null
+        }
+        Insert: {
+          ai_used?: boolean
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          fallback_used?: boolean
+          id?: string
+          input_type: string
+          predicted_issue?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          user_id: string
+          user_input?: Json
+          vehicle_id?: string | null
+        }
+        Update: {
+          ai_used?: boolean
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          fallback_used?: boolean
+          id?: string
+          input_type?: string
+          predicted_issue?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          user_id?: string
+          user_input?: Json
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      diagnosis_feedback: {
+        Row: {
+          actual_cost: number | null
+          actual_fix: string | null
+          created_at: string
+          diagnosis_id: string | null
+          id: string
+          mechanic_quote: number | null
+          notes: string | null
+          user_id: string
+          was_helpful: boolean | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_fix?: string | null
+          created_at?: string
+          diagnosis_id?: string | null
+          id?: string
+          mechanic_quote?: number | null
+          notes?: string | null
+          user_id: string
+          was_helpful?: boolean | null
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_fix?: string | null
+          created_at?: string
+          diagnosis_id?: string | null
+          id?: string
+          mechanic_quote?: number | null
+          notes?: string | null
+          user_id?: string
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
       diagnostics: {
         Row: {
           ai_output: Json | null
@@ -181,6 +268,48 @@ export type Database = {
         }
         Relationships: []
       }
+      obd2_codes: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          estimated_cost_high: number | null
+          estimated_cost_low: number | null
+          id: string
+          likely_causes: Json
+          next_step: string | null
+          safe_to_drive: string | null
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          id?: string
+          likely_causes?: Json
+          next_step?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          id?: string
+          likely_causes?: Json
+          next_step?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       product_recommendation_templates: {
         Row: {
           created_at: string
@@ -250,6 +379,48 @@ export type Database = {
         }
         Relationships: []
       }
+      recall_cache: {
+        Row: {
+          consequence: string | null
+          fetched_at: string
+          id: string
+          make: string | null
+          model: string | null
+          recall_summary: string | null
+          recall_title: string | null
+          remedy: string | null
+          source: string | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          consequence?: string | null
+          fetched_at?: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          recall_summary?: string | null
+          recall_title?: string | null
+          remedy?: string | null
+          source?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          consequence?: string | null
+          fetched_at?: string
+          id?: string
+          make?: string | null
+          model?: string | null
+          recall_summary?: string | null
+          recall_title?: string | null
+          remedy?: string | null
+          source?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       repair_guides: {
         Row: {
           created_at: string
@@ -312,6 +483,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      repair_pricing: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          labor_hours_high: number | null
+          labor_hours_low: number | null
+          labor_rate: number | null
+          notes: string | null
+          part_cost_high: number | null
+          part_cost_low: number | null
+          region: string | null
+          repair_type: string
+          total_high: number | null
+          total_low: number | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_year_max: number | null
+          vehicle_year_min: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          labor_hours_high?: number | null
+          labor_hours_low?: number | null
+          labor_rate?: number | null
+          notes?: string | null
+          part_cost_high?: number | null
+          part_cost_low?: number | null
+          region?: string | null
+          repair_type: string
+          total_high?: number | null
+          total_low?: number | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year_max?: number | null
+          vehicle_year_min?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          labor_hours_high?: number | null
+          labor_hours_low?: number | null
+          labor_rate?: number | null
+          notes?: string | null
+          part_cost_high?: number | null
+          part_cost_low?: number | null
+          region?: string | null
+          repair_type?: string
+          total_high?: number | null
+          total_low?: number | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year_max?: number | null
+          vehicle_year_min?: number | null
+        }
+        Relationships: []
       }
       repair_templates: {
         Row: {
@@ -401,6 +632,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      symptom_mappings: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          estimated_cost_high: number | null
+          estimated_cost_low: number | null
+          id: string
+          issue: string
+          next_step: string | null
+          safe_to_drive: string | null
+          severity: string | null
+          symptom: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          id?: string
+          issue: string
+          next_step?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          symptom: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_high?: number | null
+          estimated_cost_low?: number | null
+          id?: string
+          issue?: string
+          next_step?: string | null
+          safe_to_drive?: string | null
+          severity?: string | null
+          symptom?: string
+        }
+        Relationships: []
       }
       universal_task_templates: {
         Row: {
@@ -556,6 +826,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vehicle_profiles: {
+        Row: {
+          created_at: string
+          engine: string | null
+          id: string
+          make: string | null
+          mileage: number | null
+          model: string | null
+          region: string | null
+          trim: string | null
+          updated_at: string
+          user_id: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          engine?: string | null
+          id?: string
+          make?: string | null
+          mileage?: number | null
+          model?: string | null
+          region?: string | null
+          trim?: string | null
+          updated_at?: string
+          user_id: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          engine?: string | null
+          id?: string
+          make?: string | null
+          mileage?: number | null
+          model?: string | null
+          region?: string | null
+          trim?: string | null
+          updated_at?: string
+          user_id?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
       }
       vehicles: {
         Row: {
