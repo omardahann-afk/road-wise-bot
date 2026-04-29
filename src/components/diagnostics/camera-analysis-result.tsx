@@ -279,8 +279,8 @@ export function CameraAnalysisResult({
           </div>
         )}
 
-        {/* ACTION HUB — decision guidance + urgency clarity + prominent CTA */}
-        {actions && (actions.showRepair || actions.showCleaning || actions.onSave) && !lowConfidence && (
+        {/* ACTION HUB — always shown when actions exist (Confidence UX Override). */}
+        {actions && (actions.showRepair || actions.showCleaning || actions.onSave) && (
           <div className="space-y-3 pt-2">
             {/* Decision guidance line */}
             {primaryComponent && (
