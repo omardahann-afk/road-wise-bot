@@ -44,6 +44,9 @@ import {
   Hand,
   Search,
   ScanEye,
+  Wrench,
+  Banknote,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
