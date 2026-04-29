@@ -10,6 +10,7 @@ import {
   formatCAD,
   type Severity,
 } from "@/lib/pricing";
+import { sanitizeLabel, isGenericLabel } from "@/lib/camera-sanitize";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
 import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 import {
