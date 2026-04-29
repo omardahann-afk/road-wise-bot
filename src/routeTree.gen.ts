@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as ValuationRouteImport } from './routes/valuation'
 import { Route as RepairRouteImport } from './routes/repair'
+import { Route as QuoteCheckRouteImport } from './routes/quote-check'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as InspectionRouteImport } from './routes/inspection'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -40,6 +41,11 @@ const ValuationRoute = ValuationRouteImport.update({
 const RepairRoute = RepairRouteImport.update({
   id: '/repair',
   path: '/repair',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuoteCheckRoute = QuoteCheckRouteImport.update({
+  id: '/quote-check',
+  path: '/quote-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/repair': typeof RepairRoute
   '/valuation': typeof ValuationRoute
   '/vehicles': typeof VehiclesRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/repair': typeof RepairRoute
   '/valuation': typeof ValuationRoute
   '/vehicles': typeof VehiclesRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRouteWithChildren
   '/inspection': typeof InspectionRoute
   '/profile': typeof ProfileRoute
+  '/quote-check': typeof QuoteCheckRoute
   '/repair': typeof RepairRoute
   '/valuation': typeof ValuationRoute
   '/vehicles': typeof VehiclesRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/inspection'
     | '/profile'
+    | '/quote-check'
     | '/repair'
     | '/valuation'
     | '/vehicles'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/inspection'
     | '/profile'
+    | '/quote-check'
     | '/repair'
     | '/valuation'
     | '/vehicles'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/inspection'
     | '/profile'
+    | '/quote-check'
     | '/repair'
     | '/valuation'
     | '/vehicles'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRouteWithChildren
   InspectionRoute: typeof InspectionRoute
   ProfileRoute: typeof ProfileRoute
+  QuoteCheckRoute: typeof QuoteCheckRoute
   RepairRoute: typeof RepairRoute
   ValuationRoute: typeof ValuationRoute
   VehiclesRoute: typeof VehiclesRoute
@@ -269,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/repair'
       fullPath: '/repair'
       preLoaderRoute: typeof RepairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quote-check': {
+      id: '/quote-check'
+      path: '/quote-check'
+      fullPath: '/quote-check'
+      preLoaderRoute: typeof QuoteCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -395,6 +415,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRouteWithChildren,
   InspectionRoute: InspectionRoute,
   ProfileRoute: ProfileRoute,
+  QuoteCheckRoute: QuoteCheckRoute,
   RepairRoute: RepairRoute,
   ValuationRoute: ValuationRoute,
   VehiclesRoute: VehiclesRoute,
