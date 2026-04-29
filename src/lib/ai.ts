@@ -23,7 +23,7 @@ export const AI_DEFAULT_TIMEOUT_MS = 20_000;
  * in one place so the whole app sounds consistent.
  */
 export const AI_UNAVAILABLE_MESSAGE =
-  "AI enhancement is unavailable. Showing reliable basic guidance.";
+  "AI enhancement limited — core tools still active.";
 
 /**
  * Throwing variant — kept for back-compat with existing callers. New code
