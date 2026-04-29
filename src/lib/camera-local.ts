@@ -76,13 +76,13 @@ export function localCameraAnalyze(input: LocalCameraInput): AiCameraResult {
 
   const summary =
     damage.length > 0
-      ? `Local detection found ${damage.length} possible issue${damage.length === 1 ? "" : "s"}: ${damage
+      ? `AI unavailable — using visual damage detection only. Found ${damage.length} possible issue${damage.length === 1 ? "" : "s"}: ${damage
           .map((d) => d.label)
           .slice(0, 3)
-          .join(", ")}.`
+          .join(", ")}. Confirm before relying on this.`
       : detections.length > 0
-        ? "AI is unavailable. Showing what the on-device detector saw — confirm the part visually."
-        : "AI is unavailable and nothing obvious was detected on-device. Try a closer photo in better light.";
+        ? "AI unavailable — using visual damage detection only. Nothing actionable was identified. Confirm visible damage below or retake the photo."
+        : "We couldn't read this photo. Try retaking it with the damaged area centered and well lit.";
 
   const next_action =
     damage.length > 0
