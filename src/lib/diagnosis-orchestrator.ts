@@ -208,9 +208,19 @@ export interface QuoteCheckResult {
   verdict: QuoteVerdict;
   expectedLow: number;
   expectedHigh: number;
+  /** Percent above the high end of the expected range. Negative if below low end. 0 if within range. */
+  markupPct: number;
+  /** Estimated dollars overpaid vs. high end (CAD). 0 if not overpaying. */
+  overpayAmount: number;
   message: string;
   negotiationAdvice: string;
   questionsToAsk: string[];
+  /** Short red flags the user should watch for. */
+  redFlags: string[];
+  /** Negotiation script lines the user can read aloud. */
+  negotiationScript: string[];
+  /** Whether to suggest a second opinion. */
+  suggestSecondOpinion: boolean;
 }
 
 export function checkQuote(
