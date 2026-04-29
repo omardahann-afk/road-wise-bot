@@ -231,10 +231,32 @@ function SymptomChecker() {
                 vehicle_model: vehicle.model || null,
                 region: "canada",
               });
+              const urgency: RepairUrgency =
+                sev === "critical" ? "critical"
+                : sev === "high" ? "high"
+                : sev === "low" || sev === "info" ? "low"
+                : "medium";
+              const nextAction =
+                result.next_steps?.[0]?.step ??
+                (result.professional_recommended
+                  ? "Book a professional inspection."
+                  : "Try the suggested DIY check before booking a shop.");
               return (
-                <div className="-mx-4 sm:mx-0">
-                  <RepairPricingCard pricing={pricing} title={`Estimated cost — ${top.title}`} compact />
-                </div>
+                <>
+                  <div className="-mx-4 sm:mx-0">
+                    <InstantRepairPanel
+                      likelyCause={top.title}
+                      costLow={pricing.low_estimate}
+                      costHigh={pricing.high_estimate}
+                      urgency={urgency}
+                      nextAction={nextAction}
+                      hint="Based on real repair data"
+                    />
+                  </div>
+                  <div className="-mx-4 sm:mx-0">
+                    <RepairPricingCard pricing={pricing} title={`Estimated cost — ${top.title}`} compact />
+                  </div>
+                </>
               );
             })()}
 
