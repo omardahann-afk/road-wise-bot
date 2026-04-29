@@ -208,9 +208,19 @@ export interface QuoteCheckResult {
   verdict: QuoteVerdict;
   expectedLow: number;
   expectedHigh: number;
+  /** Percent above the high end of the expected range. Negative if below low end. 0 if within range. */
+  markupPct: number;
+  /** Estimated dollars overpaid vs. high end (CAD). 0 if not overpaying. */
+  overpayAmount: number;
   message: string;
   negotiationAdvice: string;
   questionsToAsk: string[];
+  /** Short red flags the user should watch for. */
+  redFlags: string[];
+  /** Negotiation script lines the user can read aloud. */
+  negotiationScript: string[];
+  /** Whether to suggest a second opinion. */
+  suggestSecondOpinion: boolean;
 }
 
 export function checkQuote(
@@ -227,11 +237,32 @@ export function checkQuote(
   const expectedLow = Math.round(low);
   const expectedHigh = Math.round(high);
 
+  // Markup % vs typical high end. Negative = below low end.
+  let markupPct = 0;
+  if (quote > expectedHigh) {
+    markupPct = Math.round(((quote - expectedHigh) / expectedHigh) * 100);
+  } else if (quote < expectedLow) {
+    markupPct = -Math.round(((expectedLow - quote) / expectedLow) * 100);
+  }
+  const overpayAmount = quote > expectedHigh ? Math.round(quote - expectedHigh) : 0;
+
   const baseQs = [
-    "Are parts and labor itemized?",
-    "Are taxes and shop supplies included?",
-    "What's the warranty on parts and labor?",
+    "Are parts and labor itemized on the invoice?",
+    "Are taxes and shop supplies included in this number?",
+    "What's the warranty on parts and on labor?",
     "Are OEM or aftermarket parts being used?",
+  ];
+
+  const baseRedFlags = [
+    "Quote given verbally with no written breakdown",
+    "Pressure to approve before you can get a second opinion",
+    "Unrelated repairs added without explanation",
+  ];
+
+  const baseScript = [
+    "Can you email me a written estimate with parts and labor itemized?",
+    "What's your shop labor rate, and how many hours is this job booked for?",
+    "If I bring my own OEM-equivalent part, what's the labor-only price?",
   ];
 
   switch (verdict) {
@@ -240,33 +271,61 @@ export function checkQuote(
         verdict,
         expectedLow,
         expectedHigh,
-        message: `This quote is well above the typical range ($${expectedLow}–$${expectedHigh}). Consider a second opinion.`,
+        markupPct,
+        overpayAmount,
+        message: `You're paying about ${markupPct}% above typical. Expected range is $${expectedLow}–$${expectedHigh}.`,
         negotiationAdvice:
           "Get one or two more quotes before approving. Ask for a written breakdown of parts vs labor.",
         questionsToAsk: baseQs,
+        redFlags: [
+          ...baseRedFlags,
+          "Quoted price is more than 35% above the typical high end",
+        ],
+        negotiationScript: [
+          ...baseScript,
+          `I have data showing this job typically runs $${expectedLow}–$${expectedHigh}. Can you match that or itemize the difference?`,
+        ],
+        suggestSecondOpinion: true,
       };
     case "high":
       return {
         verdict,
         expectedLow,
         expectedHigh,
-        message: `This quote looks high. Typical range is $${expectedLow}–$${expectedHigh}.`,
+        markupPct,
+        overpayAmount,
+        message: `Quote is about ${markupPct}% above typical. Expected range is $${expectedLow}–$${expectedHigh}.`,
         negotiationAdvice:
           "Ask the shop to walk through the line items. Request OEM-equivalent aftermarket parts if cost is the concern.",
         questionsToAsk: baseQs,
+        redFlags: baseRedFlags,
+        negotiationScript: baseScript,
+        suggestSecondOpinion: false,
       };
     case "suspiciously_low":
       return {
         verdict,
         expectedLow,
         expectedHigh,
-        message: `This quote is unusually low. Typical range is $${expectedLow}–$${expectedHigh}.`,
+        markupPct,
+        overpayAmount,
+        message: `This quote is unusually low — about ${Math.abs(markupPct)}% under typical. Expected range is $${expectedLow}–$${expectedHigh}.`,
         negotiationAdvice:
           "Confirm exactly what's included — used parts, no warranty, or partial work can explain a low price.",
         questionsToAsk: [
           ...baseQs,
           "Are the parts new, refurbished, or used?",
         ],
+        redFlags: [
+          "Parts may be used or refurbished",
+          "Warranty may be limited or excluded",
+          "Scope of work may be smaller than you think",
+        ],
+        negotiationScript: [
+          "Can you confirm in writing that the parts are new and the work is fully warrantied?",
+          "What exactly is and isn't included at this price?",
+        ],
+        suggestSecondOpinion: false,
       };
     case "fair":
     default:
@@ -274,10 +333,15 @@ export function checkQuote(
         verdict,
         expectedLow,
         expectedHigh,
-        message: `This quote is within the typical range ($${expectedLow}–$${expectedHigh}).`,
+        markupPct: 0,
+        overpayAmount: 0,
+        message: `Quote sits within typical range ($${expectedLow}–$${expectedHigh}). Looks fair.`,
         negotiationAdvice:
           "Pricing looks reasonable. Still confirm the warranty and what's included.",
         questionsToAsk: baseQs,
+        redFlags: [],
+        negotiationScript: baseScript,
+        suggestSecondOpinion: false,
       };
   }
 }
