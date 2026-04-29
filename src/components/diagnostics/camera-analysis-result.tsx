@@ -373,7 +373,7 @@ export function CameraAnalysisResult({
 
     {/* Real-world insights — pluggable knowledge layer (AI common patterns today) */}
     <RealWorldInsights
-      enabled={!lowConfidence && !!primaryComponent}
+      enabled={!!primaryComponent}
       context={{
         topic,
         issue:
