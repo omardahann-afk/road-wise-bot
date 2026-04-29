@@ -594,22 +594,24 @@ function CameraDiagnose() {
           </Card>
         )}
 
-      {/* Instant repair intelligence — always shown after a result, even from fallback */}
-      {aiResult && (() => {
-        const top = aiResult.likely_components[0];
+      {/* Instant repair intelligence — render as soon as ANY signal exists
+          (manual mark, browser-detected damage, or AI result). Guarantees the
+          user sees a cause + cost + next action even when AI is unavailable. */}
+      {(aiResult || manualFindings.length > 0 || damage.length > 0) && (() => {
+        const top = aiResult?.likely_components[0];
         const manualTop = manualFindings[0];
         const damageTop = damage[0];
         const cause =
+          manualTop?.issue ||
           top?.likely_issue ||
           top?.name ||
-          manualTop?.issue ||
           damageTop?.label ||
-          aiResult.summary ||
+          aiResult?.summary ||
           "Cosmetic or surface issue";
         const sev: Severity =
           (manualTop?.severity as Severity) ||
           (damageTop?.severity as Severity) ||
-          (aiResult.overall_confidence === "low" ? "low" : "medium");
+          (aiResult?.overall_confidence === "low" ? "low" : "medium");
         const pricing = estimateRepairCost({
           issue_type: classifyIssueType(cause),
           severity: sev,
@@ -617,6 +619,16 @@ function CameraDiagnose() {
         });
         const urgency: RepairUrgency =
           sev === "critical" ? "critical" : sev === "high" ? "high" : sev === "low" ? "low" : "medium";
+        const nextAction =
+          aiResult?.next_action ||
+          (manualTop
+            ? `Open the guided repair workflow for ${manualTop.issue.toLowerCase()}.`
+            : "Open a guided repair workflow for this issue.");
+        const hint = aiResult
+          ? "Based on real repair data"
+          : manualTop
+            ? "From your manual mark — AI enhances later if available"
+            : "From on-device detection — AI enhances later if available";
         return (
           <div className="mb-4">
             <InstantRepairPanel
@@ -624,8 +636,8 @@ function CameraDiagnose() {
               costLow={pricing.low_estimate}
               costHigh={pricing.high_estimate}
               urgency={urgency}
-              nextAction={aiResult.next_action || "Open a guided repair workflow for this issue."}
-              hint="Based on real repair data"
+              nextAction={nextAction}
+              hint={hint}
               actionLabel="Open repair guide"
               onAction={() =>
                 navigate({ to: "/repair", search: { issue: cause, severity: sev } })
