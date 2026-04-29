@@ -58,18 +58,10 @@ export function localCameraAnalyze(input: LocalCameraInput): AiCameraResult {
     });
   }
 
-  // Add object detections that look like vehicle parts (avoid e.g. "person").
-  const VEHICLE_CLASSES = /(car|truck|bicycle|motorcycle|wheel|tire|bus)/i;
-  for (const det of detections.slice(0, 3)) {
-    if (!VEHICLE_CLASSES.test(det.class)) continue;
-    if (components.some((c) => c.name.toLowerCase().includes(det.class.toLowerCase()))) continue;
-    components.push({
-      name: det.class,
-      confidence: det.score >= 0.6 ? "medium" : "low",
-      what_to_check: ["Confirm the part is intact and free of damage.", "Take a closer-up photo if anything looks off."],
-      likely_issue: null,
-    });
-  }
+  // NOTE: We intentionally do NOT add raw COCO classes (car, truck, wheel...)
+  // as components — surfacing "car" as a final diagnosis is misleading. Only
+  // concrete damage findings become components here. The summary copy below
+  // stays honest about what the detector actually saw.
 
   const warnings: string[] = [];
   if (lowVisibility) {
