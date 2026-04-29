@@ -153,48 +153,43 @@ export function CameraAnalysisResult({
           {result.summary}
         </p>
 
-        {/* INFO ROW: cost / time / safe-to-drive — only shown when we have a real diagnosis */}
-        {!lowConfidence && primaryComponent && (
-          <div className="grid grid-cols-3 gap-2">
-            <InfoCell
-              icon={<Banknote className="h-3.5 w-3.5" />}
-              label="Est. cost"
-              value={`${formatCAD(pricing.low_estimate)}–${formatCAD(pricing.high_estimate)}`}
-              tone="text-foreground"
-            />
-            <InfoCell
-              icon={<Clock className="h-3.5 w-3.5" />}
-              label="Time to fix"
-              value={formatHours(pricing.time_estimate_hours)}
-              tone="text-foreground"
-            />
-            <InfoCell
-              icon={
-                safeToDrive ? (
-                  <Car className="h-3.5 w-3.5" />
-                ) : (
-                  <XCircle className="h-3.5 w-3.5" />
-                )
-              }
-              label="Safe to drive"
-              value={safeToDrive ? "Yes" : "No"}
-              tone={safeToDrive ? "text-success" : "text-destructive"}
-            />
-          </div>
-        )}
-
-        {/* Low-confidence honest fallback */}
-        {lowConfidence && (
-          <div className="rounded-xl border border-warning/40 bg-warning/10 p-3">
-            <div className="mb-1 flex items-center gap-2 text-warning">
-              <HelpCircle className="h-4 w-4" />
-              <strong className="text-sm">Not confident enough</strong>
+        {/* INFO ROW: cost / time / safe-to-drive — always shown when we have
+            a primary component. Low confidence only changes the label, not
+            visibility (per Confidence UX Override). */}
+        {primaryComponent && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <InfoCell
+                icon={<Banknote className="h-3.5 w-3.5" />}
+                label={lowConfidence ? "Est. cost*" : "Est. cost"}
+                value={`${formatCAD(pricing.low_estimate)}–${formatCAD(pricing.high_estimate)}`}
+                tone="text-foreground"
+              />
+              <InfoCell
+                icon={<Clock className="h-3.5 w-3.5" />}
+                label="Time to fix"
+                value={formatHours(pricing.time_estimate_hours)}
+                tone="text-foreground"
+              />
+              <InfoCell
+                icon={
+                  safeToDrive ? (
+                    <Car className="h-3.5 w-3.5" />
+                  ) : (
+                    <XCircle className="h-3.5 w-3.5" />
+                  )
+                }
+                label="Safe to drive"
+                value={safeToDrive ? "Yes" : "No"}
+                tone={safeToDrive ? "text-success" : "text-destructive"}
+              />
             </div>
-            <p className="text-xs leading-relaxed text-foreground">
-              {result.recapture_tip ??
-                "Lighting or angle is making this hard to read. Tap a chip below to mark what you see, or retake with the part centered and more light."}
-            </p>
-          </div>
+            {lowConfidence && (
+              <p className="text-[11px] text-muted-foreground">
+                * Estimated — confirm to improve accuracy.
+              </p>
+            )}
+          </>
         )}
 
         {/* Image quality strip */}
