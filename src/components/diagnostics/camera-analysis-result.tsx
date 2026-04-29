@@ -180,7 +180,7 @@ export function CameraAnalysisResult({
             </div>
             <p className="text-xs leading-relaxed text-foreground">
               {result.recapture_tip ??
-                "I'm not sure what I'm looking at. Try again with better lighting, less glare, and the part centered in frame."}
+                "Lighting or angle is making this hard to read. Tap a chip below to mark what you see, or retake with the part centered and more light."}
             </p>
           </div>
         )}

@@ -91,9 +91,9 @@ function Obd2Lookup() {
           });
         }
       } catch (aiErr) {
-        // AI failed — deterministic result still shows.
-        console.warn("AI enrichment failed, using deterministic only:", aiErr);
-        toast.info("Showing offline data. AI enrichment unavailable right now.");
+        // AI enhancement failed — deterministic result still shows.
+        console.warn("AI enrichment unavailable, using deterministic only:", aiErr);
+        toast.info("AI enhancement limited — core tools still active.");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Lookup failed");
