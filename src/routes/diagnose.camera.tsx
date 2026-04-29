@@ -15,6 +15,11 @@ import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { localCameraAnalyze } from "@/lib/camera-local";
 import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai";
 import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
+import {
+  isGenericLabel,
+  sanitizeLabel,
+  UNIDENTIFIED_AREA_LABEL,
+} from "@/lib/camera-sanitize";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
