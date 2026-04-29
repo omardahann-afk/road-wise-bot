@@ -10,6 +10,7 @@ import {
   formatCAD,
   type Severity,
 } from "@/lib/pricing";
+import { sanitizeLabel, isGenericLabel } from "@/lib/camera-sanitize";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
 import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 import {
@@ -63,7 +64,18 @@ export function CameraAnalysisResult({
   }, [result]);
 
   const lowConfidence = result.overall_confidence === "low";
-  const primaryComponent = result.likely_components?.[0];
+  const primaryComponentRaw = result.likely_components?.[0];
+  // Sanitize generic labels ("car", "vehicle"...) before rendering anywhere.
+  const primaryComponent = primaryComponentRaw
+    ? {
+        ...primaryComponentRaw,
+        name: sanitizeLabel(primaryComponentRaw.name),
+        likely_issue:
+          primaryComponentRaw.likely_issue && !isGenericLabel(primaryComponentRaw.likely_issue)
+            ? primaryComponentRaw.likely_issue
+            : null,
+      }
+    : undefined;
   const repairWorkflow = primaryComponent
     ? mapToWorkflow(primaryComponent.name, primaryComponent.likely_issue)
     : null;

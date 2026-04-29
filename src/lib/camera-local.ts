@@ -58,18 +58,10 @@ export function localCameraAnalyze(input: LocalCameraInput): AiCameraResult {
     });
   }
 
-  // Add object detections that look like vehicle parts (avoid e.g. "person").
-  const VEHICLE_CLASSES = /(car|truck|bicycle|motorcycle|wheel|tire|bus)/i;
-  for (const det of detections.slice(0, 3)) {
-    if (!VEHICLE_CLASSES.test(det.class)) continue;
-    if (components.some((c) => c.name.toLowerCase().includes(det.class.toLowerCase()))) continue;
-    components.push({
-      name: det.class,
-      confidence: det.score >= 0.6 ? "medium" : "low",
-      what_to_check: ["Confirm the part is intact and free of damage.", "Take a closer-up photo if anything looks off."],
-      likely_issue: null,
-    });
-  }
+  // NOTE: We intentionally do NOT add raw COCO classes (car, truck, wheel...)
+  // as components — surfacing "car" as a final diagnosis is misleading. Only
+  // concrete damage findings become components here. The summary copy below
+  // stays honest about what the detector actually saw.
 
   const warnings: string[] = [];
   if (lowVisibility) {
@@ -84,13 +76,13 @@ export function localCameraAnalyze(input: LocalCameraInput): AiCameraResult {
 
   const summary =
     damage.length > 0
-      ? `Local detection found ${damage.length} possible issue${damage.length === 1 ? "" : "s"}: ${damage
+      ? `AI unavailable — using visual damage detection only. Found ${damage.length} possible issue${damage.length === 1 ? "" : "s"}: ${damage
           .map((d) => d.label)
           .slice(0, 3)
-          .join(", ")}.`
+          .join(", ")}. Confirm before relying on this.`
       : detections.length > 0
-        ? "AI is unavailable. Showing what the on-device detector saw — confirm the part visually."
-        : "AI is unavailable and nothing obvious was detected on-device. Try a closer photo in better light.";
+        ? "AI unavailable — using visual damage detection only. Nothing actionable was identified. Confirm visible damage below or retake the photo."
+        : "We couldn't read this photo. Try retaking it with the damaged area centered and well lit.";
 
   const next_action =
     damage.length > 0
