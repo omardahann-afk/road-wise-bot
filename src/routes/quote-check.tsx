@@ -13,7 +13,20 @@ import {
   type IssueType,
 } from "@/lib/pricing";
 import { checkQuote, type QuoteCheckResult } from "@/lib/diagnosis-orchestrator";
-import { Receipt, ShieldCheck, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  Receipt,
+  ShieldCheck,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Save,
+  MessageSquareQuote,
+  Flag,
+  Users,
+} from "lucide-react";
 
 export const Route = createFileRoute("/quote-check")({
   component: QuoteCheckPage,
@@ -41,8 +54,15 @@ function QuoteCheckPage() {
   const [quote, setQuote] = useState("");
   const [vehicle, setVehicle] = useState({ year: "", make: "", model: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const result = useMemo<{ pricing: ReturnType<typeof estimateRepairCost>; check: QuoteCheckResult } | null>(() => {
+  const result = useMemo<{
+    pricing: ReturnType<typeof estimateRepairCost>;
+    check: QuoteCheckResult;
+    issueType: IssueType;
+  } | null>(() => {
     if (!submitted) return null;
     const quoteNum = Number(quote);
     if (!Number.isFinite(quoteNum) || quoteNum <= 0) return null;
@@ -58,12 +78,53 @@ function QuoteCheckPage() {
       region: "canada",
     });
     const check = checkQuote(quoteNum, pricing.low_estimate, pricing.high_estimate);
-    return { pricing, check };
+    return { pricing, check, issueType };
   }, [submitted, quote, repairType, customDescription, vehicle]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSavedId(null);
     setSubmitted(true);
+  }
+
+  async function saveResult() {
+    if (!user || !result) {
+      if (!user) toast.info("Sign in to save quote checks to your history.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("diagnostics")
+        .insert({
+          user_id: user.id,
+          mode: "symptom",
+          input: {
+            quote_check: true,
+            quoted: Number(quote),
+            repair_type: result.issueType,
+            description: customDescription || null,
+            vehicle,
+          } as never,
+          ai_output: {
+            pricing: result.pricing,
+            check: result.check,
+            source: "quote_check",
+          } as never,
+          severity: "info",
+          summary: `Quote check: ${COMMON_REPAIRS.find((r) => r.type === result.issueType)?.label ?? result.issueType} — ${result.check.verdict}`,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      setSavedId(data?.id ?? null);
+      toast.success("Saved to your history");
+    } catch (err) {
+      console.warn("Save quote check failed:", err);
+      toast.info("Couldn't save right now — your result is still on screen.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -140,7 +201,16 @@ function QuoteCheckPage() {
         </Button>
       </form>
 
-      {result && <QuoteVerdict result={result} quoted={Number(quote)} />}
+      {result && (
+        <QuoteVerdict
+          result={result}
+          quoted={Number(quote)}
+          onSave={saveResult}
+          saving={saving}
+          saved={!!savedId}
+          canSave={!!user}
+        />
+      )}
     </AppShell>
   );
 }
@@ -148,9 +218,17 @@ function QuoteCheckPage() {
 function QuoteVerdict({
   result,
   quoted,
+  onSave,
+  saving,
+  saved,
+  canSave,
 }: {
   result: { pricing: ReturnType<typeof estimateRepairCost>; check: QuoteCheckResult };
   quoted: number;
+  onSave: () => void;
+  saving: boolean;
+  saved: boolean;
+  canSave: boolean;
 }) {
   const { check } = result;
   const tone =
@@ -162,6 +240,9 @@ function QuoteVerdict({
       ? { bg: "border-destructive/40 bg-destructive/10", text: "text-destructive", label: "Overpriced", Icon: AlertTriangle }
       : { bg: "border-primary/40 bg-primary/10", text: "text-primary", label: "Suspiciously low", Icon: TrendingDown };
   const { Icon } = tone;
+
+  const showOverpay =
+    (check.verdict === "high" || check.verdict === "very_high") && check.overpayAmount > 0;
 
   return (
     <Card className="mt-6 bg-gradient-card shadow-card">
@@ -194,6 +275,17 @@ function QuoteVerdict({
           </div>
         </div>
 
+        {showOverpay && (
+          <div className="rounded-xl border-2 border-destructive/40 bg-destructive/10 p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-destructive">
+              You may be overpaying
+            </div>
+            <div className="mt-0.5 text-lg font-black leading-tight text-destructive">
+              ~{formatCAD(check.overpayAmount)} above typical · {check.markupPct}% markup
+            </div>
+          </div>
+        )}
+
         <p className="text-sm">{check.message}</p>
 
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
@@ -202,6 +294,37 @@ function QuoteVerdict({
           </div>
           <p className="mt-1 text-sm">{check.negotiationAdvice}</p>
         </div>
+
+        {check.negotiationScript.length > 0 && (
+          <div>
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <MessageSquareQuote className="h-3 w-3" /> Negotiation script
+            </h4>
+            <ul className="space-y-1.5">
+              {check.negotiationScript.map((s, i) => (
+                <li
+                  key={i}
+                  className="rounded-lg border border-border/60 bg-background/40 p-2.5 text-xs italic leading-snug"
+                >
+                  "{s}"
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {check.redFlags.length > 0 && (
+          <div className="rounded-xl border border-warning/40 bg-warning/5 p-3">
+            <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-warning">
+              <Flag className="h-3 w-3" /> Red flags to watch for
+            </h4>
+            <ul className="list-disc space-y-0.5 pl-4 text-xs">
+              {check.redFlags.map((f, i) => (
+                <li key={i}>{f}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -214,7 +337,32 @@ function QuoteVerdict({
           </ul>
         </div>
 
-        <p className="border-t border-border/60 pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+        {check.suggestSecondOpinion && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <Users className="h-3 w-3" /> Get a second opinion
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              At this markup level, a 5-minute call to one or two other shops is usually worth it.
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
+          <Button
+            type="button"
+            size="sm"
+            variant={saved ? "outline" : "default"}
+            disabled={saving || saved}
+            onClick={onSave}
+            className="flex-1"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {saved ? "Saved to history" : saving ? "Saving…" : canSave ? "Save result" : "Sign in to save"}
+          </Button>
+        </div>
+
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Based on typical Canadian shop pricing · No AI required
         </p>
       </CardContent>
