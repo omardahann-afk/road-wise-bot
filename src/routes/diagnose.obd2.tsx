@@ -13,6 +13,7 @@ import { lookupObd2, inferObd2Stub, type Obd2Entry } from "@/lib/obd2-dataset";
 import { estimateRepairCost } from "@/lib/pricing";
 import { Obd2ResultCard } from "@/components/diagnostics/obd2-result-card";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { InstantRepairPanel, type RepairUrgency } from "@/components/diagnostics/instant-repair-panel";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
 import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 
@@ -153,6 +154,32 @@ function Obd2Lookup() {
       {grounded && (
         <div className="mb-4">
           <Obd2ResultCard entry={grounded.entry} fromAi={grounded.fromAi} />
+        </div>
+      )}
+
+      {/* Instant repair intelligence — fixed, deterministic, never empty */}
+      {grounded && pricing && (
+        <div className="mb-4">
+          <InstantRepairPanel
+            likelyCause={grounded.entry.title}
+            costLow={pricing.low_estimate}
+            costHigh={pricing.high_estimate}
+            urgency={
+              (grounded.entry.severity === "info" || grounded.entry.severity === "low"
+                ? "low"
+                : grounded.entry.severity === "critical"
+                ? "critical"
+                : grounded.entry.severity === "high"
+                ? "high"
+                : "medium") as RepairUrgency
+            }
+            nextAction={
+              grounded.entry.drivable
+                ? "Diagnose the underlying cause before symptoms worsen."
+                : "Stop driving and book service — driving on this code can cause more damage."
+            }
+            hint="Based on real repair data"
+          />
         </div>
       )}
 

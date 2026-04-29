@@ -15,6 +15,7 @@ import { localSymptomDiagnose } from "@/lib/symptom-local";
 import { severityClass } from "@/lib/severity";
 import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
 import { RepairPricingCard } from "@/components/diagnostics/repair-pricing-card";
+import { InstantRepairPanel, type RepairUrgency } from "@/components/diagnostics/instant-repair-panel";
 import { RealWorldInsights } from "@/components/diagnostics/real-world-insights";
 import { useActiveVehicleProfile } from "@/hooks/use-active-vehicle-profile";
 
@@ -230,10 +231,32 @@ function SymptomChecker() {
                 vehicle_model: vehicle.model || null,
                 region: "canada",
               });
+              const urgency: RepairUrgency =
+                sev === "critical" ? "critical"
+                : sev === "high" ? "high"
+                : sev === "low" || sev === "info" ? "low"
+                : "medium";
+              const nextAction =
+                result.next_steps?.[0]?.step ??
+                (result.professional_recommended
+                  ? "Book a professional inspection."
+                  : "Try the suggested DIY check before booking a shop.");
               return (
-                <div className="-mx-4 sm:mx-0">
-                  <RepairPricingCard pricing={pricing} title={`Estimated cost — ${top.title}`} compact />
-                </div>
+                <>
+                  <div className="-mx-4 sm:mx-0">
+                    <InstantRepairPanel
+                      likelyCause={top.title}
+                      costLow={pricing.low_estimate}
+                      costHigh={pricing.high_estimate}
+                      urgency={urgency}
+                      nextAction={nextAction}
+                      hint="Based on real repair data"
+                    />
+                  </div>
+                  <div className="-mx-4 sm:mx-0">
+                    <RepairPricingCard pricing={pricing} title={`Estimated cost — ${top.title}`} compact />
+                  </div>
+                </>
               );
             })()}
 

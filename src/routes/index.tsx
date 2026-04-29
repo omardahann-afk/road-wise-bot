@@ -10,6 +10,7 @@ import {
   Stethoscope,
   GraduationCap,
   Car,
+  Receipt,
   ChevronRight,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -51,6 +52,7 @@ const PRIMARY_PATHS = [
 const SHORTCUTS = [
   { to: "/diagnose/obd2", title: "OBD2 code lookup", icon: ScanLine },
   { to: "/diagnose/symptom", title: "Symptom checker", icon: Stethoscope },
+  { to: "/quote-check", title: "Check a quote", icon: Receipt },
   { to: "/repair", title: "Repair workflows", icon: Wrench },
   { to: "/valuation", title: "Value & negotiate", icon: Search },
   { to: "/beginner", title: "Beginner mode", icon: GraduationCap },

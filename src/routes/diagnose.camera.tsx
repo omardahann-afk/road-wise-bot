@@ -9,10 +9,12 @@ import { CoachingOverlay } from "@/components/diagnostics/coaching-overlay";
 import { LowVisibilityBadge } from "@/components/diagnostics/low-visibility-badge";
 import { ManualDamageMark } from "@/components/diagnostics/manual-damage-mark";
 import { DamageChips } from "@/components/diagnostics/damage-chips";
+import { InstantRepairPanel, type RepairUrgency } from "@/components/diagnostics/instant-repair-panel";
 import { useSmartCamera } from "@/hooks/use-smart-camera";
 import { analyzeCameraPhoto, type AiCameraResult } from "@/lib/camera-analysis";
 import { localCameraAnalyze } from "@/lib/camera-local";
 import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai";
+import { classifyIssueType, estimateRepairCost, type Severity } from "@/lib/pricing";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { recordLearningEvent } from "@/lib/learning";
@@ -575,6 +577,63 @@ function CameraDiagnose() {
           </CardContent>
         </Card>
       )}
+
+      {/* Low-confidence prompt — never let the user feel stuck */}
+      {aiResult &&
+        (aiResult.overall_confidence === "low" ||
+          aiResult.likely_components.length === 0) &&
+        manualFindings.length === 0 &&
+        damage.length === 0 && (
+          <Card className="mb-4 border-warning/40 bg-warning/5">
+            <CardContent className="p-3 text-xs">
+              <p className="font-semibold text-warning">We might have missed something.</p>
+              <p className="mt-1 text-muted-foreground">
+                Tap a chip below to mark what you see — every mark improves future detection.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+      {/* Instant repair intelligence — always shown after a result, even from fallback */}
+      {aiResult && (() => {
+        const top = aiResult.likely_components[0];
+        const manualTop = manualFindings[0];
+        const damageTop = damage[0];
+        const cause =
+          top?.likely_issue ||
+          top?.name ||
+          manualTop?.issue ||
+          damageTop?.label ||
+          aiResult.summary ||
+          "Cosmetic or surface issue";
+        const sev: Severity =
+          (manualTop?.severity as Severity) ||
+          (damageTop?.severity as Severity) ||
+          (aiResult.overall_confidence === "low" ? "low" : "medium");
+        const pricing = estimateRepairCost({
+          issue_type: classifyIssueType(cause),
+          severity: sev,
+          region: "canada",
+        });
+        const urgency: RepairUrgency =
+          sev === "critical" ? "critical" : sev === "high" ? "high" : sev === "low" ? "low" : "medium";
+        return (
+          <div className="mb-4">
+            <InstantRepairPanel
+              likelyCause={cause}
+              costLow={pricing.low_estimate}
+              costHigh={pricing.high_estimate}
+              urgency={urgency}
+              nextAction={aiResult.next_action || "Open a guided repair workflow for this issue."}
+              hint="Based on real repair data"
+              actionLabel="Open repair guide"
+              onAction={() =>
+                navigate({ to: "/repair", search: { issue: cause, severity: sev } })
+              }
+            />
+          </div>
+        );
+      })()}
 
       {/* Results */}
       {aiResult ? (
