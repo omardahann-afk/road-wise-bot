@@ -44,6 +44,9 @@ import {
   Hand,
   Search,
   ScanEye,
+  Wrench,
+  Banknote,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -584,33 +587,29 @@ function CameraDiagnose() {
       )}
 
       {/* ---------------------------------------------------------------- */}
-      {/* TRUST GATE                                                       */}
-      {/* Decide what we can responsibly show:                             */}
-      {/*   - hasUserConfirmation: user tapped a damage chip / manual mark */}
-      {/*   - aiConfident: AI returned medium/high confidence              */}
-      {/*   - canShowFinalDiagnosis: ≥ medium confidence OR confirmation   */}
-      {/*   - costMode: "hidden" | "preliminary" | "normal"                */}
+      {/* CONFIDENCE UX OVERRIDE — single leading-diagnosis block.         */}
+      {/* No more separate "Needs confirmation" / "Not confident enough"   */}
+      {/* warning cards. If ANY signal exists (AI, on-device damage, or    */}
+      {/* manual mark) we always render: cause + cost + urgency + CTA      */}
+      {/* stack. Confidence affects WORDING only, not visibility.          */}
       {/* ---------------------------------------------------------------- */}
-      {(() => {
+      {(aiResult || damage.length > 0 || manualFindings.length > 0) && (() => {
         const hasUserConfirmation = manualFindings.length > 0;
         const aiConf = aiResult?.overall_confidence ?? null;
-        const aiConfident = aiConf === "medium" || aiConf === "high";
-        const canShowFinalDiagnosis = aiConfident || hasUserConfirmation;
-        const costMode: "hidden" | "preliminary" | "normal" =
-          hasUserConfirmation || aiConf === "high"
-            ? "normal"
-            : aiConf === "medium"
-              ? "preliminary"
-              : "hidden";
 
-        // ---- Source the cause label, sanitizing generic outputs --------
+        // Effective confidence: a confirmed manual mark always promotes to high.
+        const effectiveConf: "low" | "medium" | "high" = hasUserConfirmation
+          ? "high"
+          : (aiConf ?? (damage.length > 0 ? "low" : "low"));
+
+        // Source the cause label, sanitizing generic outputs and prioritizing
+        // damage labels over a generic AI part guess.
         const aiTopRaw = aiResult?.likely_components[0];
         const aiTopName = sanitizeLabel(aiTopRaw?.name);
         const aiTopIssue = aiTopRaw?.likely_issue ?? null;
         const manualTop = manualFindings[0];
         const damageTop = damage[0];
 
-        // Prefer real damage labels over a generic AI part guess.
         const cause =
           manualTop?.issue ||
           damageTop?.label ||
@@ -623,104 +622,133 @@ function CameraDiagnose() {
         const sev: Severity =
           (manualTop?.severity as Severity) ||
           (damageTop?.severity as Severity) ||
-          (aiConf === "high" ? "medium" : aiConf === "medium" ? "medium" : "low");
+          (effectiveConf === "high" ? "medium" : effectiveConf === "medium" ? "medium" : "low");
+
+        const pricing = estimateRepairCost({
+          issue_type: classifyIssueType(cause),
+          severity: sev,
+          region: "canada",
+        });
+
+        const urgency: RepairUrgency =
+          sev === "critical"
+            ? "critical"
+            : sev === "high"
+              ? "high"
+              : sev === "low"
+                ? "low"
+                : "medium";
+
+        const nextAction =
+          aiResult?.next_action ||
+          (manualTop
+            ? `Open the guided repair workflow for ${manualTop.issue.toLowerCase()}.`
+            : "Open a guided repair workflow for this issue.");
+
+        // Cost wording follows confidence (visibility never gated).
+        const costHint =
+          effectiveConf === "high"
+            ? hasUserConfirmation
+              ? "Based on your confirmed damage"
+              : "Based on real repair data"
+            : effectiveConf === "medium"
+              ? "Preliminary estimate — refine this diagnosis to improve accuracy"
+              : "Estimated — confirm to improve accuracy";
+
+        // "Confirm" CTA — promotes the top on-device damage candidate to a
+        // manual finding (which then unlocks the high-confidence wording).
+        const canConfirm = !hasUserConfirmation && damage.length > 0;
+        const confirmCandidate = damage.find(
+          (d) => !addedDamage.has(d.damage_type),
+        );
 
         return (
-          <>
-            {/* ---------------------------------------------------------- */}
-            {/* LOW-CONFIDENCE TRUST CARD                                  */}
-            {/* Replaces the old "missed something" hint with explicit     */}
-            {/* "Needs confirmation" copy + confirm/retake CTAs.           */}
-            {/* ---------------------------------------------------------- */}
-            {aiResult && !canShowFinalDiagnosis && (
-              <Card className="mb-4 border-warning/50 bg-warning/10">
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-center gap-2 text-warning">
-                    <ScanEye className="h-4 w-4" />
-                    <h2 className="text-sm font-bold">Needs confirmation</h2>
-                  </div>
-                  <p className="text-xs text-foreground">
-                    {damage.length > 0
-                      ? "We detected possible damage, but the photo is not clear enough for a final diagnosis."
-                      : "We're not confident enough yet. Confirm the visible damage below or retake the photo for a better result."}
-                  </p>
-                  <div className="flex flex-col gap-2 pt-1 sm:flex-row">
-                    {damage.length > 0 ? (
-                      <p className="text-[11px] text-muted-foreground">
-                        Tap a damage chip below to confirm what you see — that unlocks the cost estimate and repair guide.
-                      </p>
-                    ) : null}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleRetake}
-                      className="sm:ml-auto"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" /> Retake photo
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <div className="mb-4 space-y-3">
+            <InstantRepairPanel
+              likelyCause={cause}
+              costLow={pricing.low_estimate}
+              costHigh={pricing.high_estimate}
+              urgency={urgency}
+              nextAction={nextAction}
+              hint={costHint}
+              actionLabel="Open repair guide"
+              onAction={() =>
+                navigate({
+                  to: "/repair",
+                  search: { issue: cause, severity: sev },
+                })
+              }
+            />
 
-            {/* ---------------------------------------------------------- */}
-            {/* INSTANT REPAIR PANEL                                       */}
-            {/* Only when we have a defensible diagnosis: AI ≥ medium OR   */}
-            {/* the user manually confirmed damage. Cost visibility is     */}
-            {/* further gated by costMode.                                 */}
-            {/* ---------------------------------------------------------- */}
-            {canShowFinalDiagnosis && (() => {
-              const pricing = estimateRepairCost({
-                issue_type: classifyIssueType(cause),
-                severity: sev,
-                region: "canada",
-              });
-              const urgency: RepairUrgency =
-                sev === "critical"
-                  ? "critical"
-                  : sev === "high"
-                    ? "high"
-                    : sev === "low"
-                      ? "low"
-                      : "medium";
-              const nextAction =
-                aiResult?.next_action ||
-                (manualTop
-                  ? `Open the guided repair workflow for ${manualTop.issue.toLowerCase()}.`
-                  : "Open a guided repair workflow for this issue.");
-              const hint =
-                costMode === "preliminary"
-                  ? "Preliminary estimate — confirm a damage chip to improve accuracy"
-                  : hasUserConfirmation
-                    ? "Based on your confirmed damage"
-                    : "Based on real repair data";
-
-              // When cost is gated, pass a sentinel range that the panel
-              // hides — but InstantRepairPanel always shows cost. Keep its
-              // contract intact and instead only render it when costMode is
-              // not "hidden". (costMode "hidden" can't happen here because
-              // canShowFinalDiagnosis already excludes low-conf no-confirm.)
-              return (
-                <div className="mb-4">
-                  <InstantRepairPanel
-                    likelyCause={cause}
-                    costLow={pricing.low_estimate}
-                    costHigh={pricing.high_estimate}
-                    urgency={urgency}
-                    nextAction={nextAction}
-                    hint={hint}
-                    actionLabel="Open repair guide"
-                    onAction={() =>
-                      navigate({
-                        to: "/repair",
-                        search: { issue: cause, severity: sev },
-                      })
-                    }
-                  />
-                </div>
-              );
-            })()}
-          </>
+            {/* CTA STACK — always available: Confirm / Repair / Cost / Save */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                size="sm"
+                variant={canConfirm ? "default" : "outline"}
+                disabled={!canConfirm || !confirmCandidate}
+                onClick={() => {
+                  if (confirmCandidate) handleAddDamage(confirmCandidate);
+                }}
+                className="col-span-2"
+              >
+                <ScanEye className="h-4 w-4" />
+                {hasUserConfirmation
+                  ? "Damage confirmed"
+                  : canConfirm
+                    ? `Confirm: ${confirmCandidate?.label ?? "visible damage"}`
+                    : "Refine this diagnosis"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  navigate({
+                    to: "/repair",
+                    search: { issue: cause, severity: sev },
+                  })
+                }
+              >
+                <Wrench className="h-4 w-4" /> Open repair workflow
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate({ to: "/quote-check" })}
+              >
+                <Banknote className="h-4 w-4" /> Check repair cost
+              </Button>
+              <Button
+                size="sm"
+                variant={savedId ? "outline" : "secondary"}
+                disabled={savingReport || !!savedId || !user}
+                onClick={() => {
+                  if (aiResult) void persistDiagnostic(aiResult);
+                  else if (user) {
+                    // Synthesize a minimal AI-shaped record from local signal.
+                    void persistDiagnostic({
+                      summary: cause,
+                      overall_confidence: effectiveConf,
+                      likely_components: [
+                        {
+                          name: cause,
+                          confidence: effectiveConf,
+                          what_to_check: [],
+                          likely_issue: cause,
+                        },
+                      ],
+                      warnings: [],
+                      next_action: nextAction,
+                      follow_up_questions: [],
+                      cleaning: null,
+                    });
+                  }
+                }}
+              >
+                <Save className="h-4 w-4" />
+                {savedId ? "Saved" : user ? "Save issue" : "Sign in to save"}
+              </Button>
+            </div>
+          </div>
         );
       })()}
 
