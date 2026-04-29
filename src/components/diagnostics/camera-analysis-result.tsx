@@ -205,7 +205,7 @@ export function CameraAnalysisResult({
         {result.likely_components?.length > 1 && (
           <div>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Other detections
+              Other possible findings
             </h4>
             <ul className="space-y-2">
               {result.likely_components.slice(1).map((component, index) => (
