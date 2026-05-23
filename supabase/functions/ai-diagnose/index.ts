@@ -354,16 +354,22 @@ async function callGroq(systemPrompt: string, userContent: unknown): Promise<Nor
 }
 
 async function callOllama(systemPrompt: string, userContent: unknown): Promise<NormalizedResult> {
-  const baseRaw = Deno.env.get("OLLAMA_BASE_URL");
-  if (!baseRaw) return { status: 503, content: "{}", errorBody: "OLLAMA_BASE_URL not set" };
-  const base = baseRaw.replace(/\/+$/, "");
+  const apiKey = Deno.env.get("OLLAMA_API_KEY");
+  if (!apiKey) return { status: 503, content: "{}", errorBody: "OLLAMA_API_KEY not set" };
+  // Ollama Cloud (https://ollama.com) exposes an OpenAI-compatible endpoint
+  // and authenticates with a bearer API key. Self-hosted users can override
+  // the host via OLLAMA_BASE_URL; otherwise we default to Ollama Cloud.
+  const base = (Deno.env.get("OLLAMA_BASE_URL") ?? "https://ollama.com").replace(/\/+$/, "");
   const url = `${base}/v1/chat/completions`;
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 15_000);
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       signal: ctl.signal,
       body: JSON.stringify({
         model: OLLAMA_MODEL,
