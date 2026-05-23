@@ -293,26 +293,159 @@ Context: ${JSON.stringify(ctx)}`;
   }
 }
 
+// ---------------------------------------------------------------------------
+// 3-tier AI routing
+//   Tier 1 — Groq (fast):      obd2, symptom
+//   Tier 2 — Ollama (medium):  repair_steps, workflow_create, insights
+//                              (silent fallback to Groq if unreachable)
+//   Tier 3 — Claude (complex): camera, inspection_frame, inspection_final,
+//                              valuation
+// ---------------------------------------------------------------------------
+
+type Provider = "groq" | "ollama" | "claude";
+
+function selectProvider(task: Body["task"]): Provider {
+  switch (task) {
+    case "obd2":
+    case "symptom":
+      return "groq";
+    case "repair_steps":
+    case "workflow_create":
+    case "insights":
+      return "ollama";
+    case "camera":
+    case "inspection_frame":
+    case "inspection_final":
+    case "valuation":
+      return "claude";
+    default:
+      return "groq";
+  }
+}
+
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+const OLLAMA_MODEL = "llama3.2";
+const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+
+interface NormalizedResult {
+  status: number;
+  content: string;
+  errorBody?: string;
+}
+
+async function callGroq(systemPrompt: string, userContent: unknown): Promise<NormalizedResult> {
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) return { status: 500, content: "{}", errorBody: "GROQ_API_KEY not set" };
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: typeof userContent === "string" ? userContent : JSON.stringify(userContent) },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!res.ok) return { status: res.status, content: "{}", errorBody: await res.text() };
+  const j = await res.json();
+  return { status: 200, content: j?.choices?.[0]?.message?.content ?? "{}" };
+}
+
+async function callOllama(systemPrompt: string, userContent: unknown): Promise<NormalizedResult> {
+  const baseRaw = Deno.env.get("OLLAMA_BASE_URL");
+  if (!baseRaw) return { status: 503, content: "{}", errorBody: "OLLAMA_BASE_URL not set" };
+  const base = baseRaw.replace(/\/+$/, "");
+  const url = `${base}/v1/chat/completions`;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 15_000);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: ctl.signal,
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: typeof userContent === "string" ? userContent : JSON.stringify(userContent) },
+        ],
+        response_format: { type: "json_object" },
+        stream: false,
+      }),
+    }).finally(() => clearTimeout(timer));
+    if (!res.ok) return { status: res.status, content: "{}", errorBody: await res.text() };
+    const j = await res.json();
+    const content = j?.choices?.[0]?.message?.content ?? j?.message?.content ?? "{}";
+    return { status: 200, content };
+  } catch (e) {
+    return { status: 503, content: "{}", errorBody: e instanceof Error ? e.message : "ollama unreachable" };
+  }
+}
+
+async function callClaude(
+  systemPrompt: string,
+  userText: string,
+  imageB64?: string,
+): Promise<NormalizedResult> {
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!key) return { status: 500, content: "{}", errorBody: "ANTHROPIC_API_KEY not set" };
+
+  const contentBlocks: unknown[] = [];
+  if (imageB64 && imageB64.length > 100) {
+    let mediaType = "image/jpeg";
+    let dataOnly = imageB64;
+    const m = imageB64.match(/^data:([^;]+);base64,(.+)$/);
+    if (m) {
+      mediaType = m[1];
+      dataOnly = m[2];
+    }
+    contentBlocks.push({
+      type: "image",
+      source: { type: "base64", media_type: mediaType, data: dataOnly },
+    });
+  }
+  contentBlocks.push({
+    type: "text",
+    text: `${userText}\n\nRespond with VALID JSON ONLY. No prose, no markdown fences.`,
+  });
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: "user", content: contentBlocks }],
+    }),
+  });
+  if (!res.ok) return { status: res.status, content: "{}", errorBody: await res.text() };
+  const j = await res.json();
+  const text = Array.isArray(j?.content)
+    ? j.content.filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("")
+    : "";
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim() || "{}";
+  return { status: 200, content: cleaned };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = (await req.json()) as Body;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const userPrompt = buildUserPrompt(body);
-
-    // Multimodal: when the camera task includes an image, send it as an
-    // image_url content block so Gemini can actually look at the photo.
     const imageB64 = (body.payload as { image_base64?: string })?.image_base64;
+    const provider = selectProvider(body.task);
+
     const userContent: unknown =
-      body.task === "camera" && typeof imageB64 === "string" && imageB64.length > 100
+      (body.task === "camera" || body.task === "inspection_frame") &&
+      typeof imageB64 === "string" && imageB64.length > 100
         ? [
             { type: "text", text: userPrompt },
             {
@@ -326,50 +459,44 @@ serve(async (req) => {
           ]
         : userPrompt;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userContent },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    let result: NormalizedResult;
+    if (provider === "claude") {
+      result = await callClaude(SYSTEM_PROMPT, userPrompt, imageB64);
+    } else if (provider === "ollama") {
+      result = await callOllama(SYSTEM_PROMPT, userContent);
+      if (result.status !== 200) {
+        console.warn("Ollama unavailable, falling back to Groq:", result.errorBody);
+        result = await callGroq(SYSTEM_PROMPT, userContent);
+      }
+    } else {
+      result = await callGroq(SYSTEM_PROMPT, userContent);
+    }
 
-    if (aiRes.status === 429) {
+    if (result.status === 429) {
       return new Response(
         JSON.stringify({ error: "Rate limit reached. Please wait a moment and try again." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    if (aiRes.status === 402) {
+    if (result.status === 402) {
       return new Response(
-        JSON.stringify({ error: "AI credits exhausted. Add credits in workspace settings." }),
+        JSON.stringify({ error: "AI credits exhausted." }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    if (!aiRes.ok) {
-      const txt = await aiRes.text();
-      console.error("AI gateway error", aiRes.status, txt);
+    if (result.status !== 200) {
+      console.error("AI provider error", provider, result.status, result.errorBody);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const json = await aiRes.json();
-    const content: string = json?.choices?.[0]?.message?.content ?? "{}";
     let parsed: unknown;
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(result.content);
     } catch {
-      parsed = { error: "Invalid JSON from model", raw: content };
+      parsed = { error: "Invalid JSON from model", raw: result.content };
     }
 
     return new Response(JSON.stringify({ result: parsed }), {
