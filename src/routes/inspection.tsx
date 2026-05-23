@@ -114,7 +114,7 @@ interface AiFinalResult {
 type Phase = "setup" | "step" | "report";
 
 function InspectionFlow() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("setup");
   const [stepIdx, setStepIdx] = useState(0);
@@ -141,8 +141,8 @@ function InspectionFlow() {
   const [showWalk, setShowWalk] = useState(false);
 
   useEffect(() => {
-    if (!user) navigate({ to: "/auth" });
-  }, [user, navigate]);
+    if (!authLoading && !user) navigate({ to: "/auth" });
+  }, [authLoading, user, navigate]);
 
   useEffect(() => {
     if (phase === "step" && shouldShowWalkthrough()) setShowWalk(true);

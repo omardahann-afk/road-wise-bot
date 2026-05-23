@@ -86,7 +86,10 @@ function VehiclesPage() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    setBusy(true);
+    if (!form.year.trim() || !form.make.trim() || !form.model.trim()) {
+      toast.error("Year, Make, and Model are required.");
+      return;
+    }
     try {
       const { error } = await supabase.from("vehicles").insert({
         user_id: user.id,
@@ -140,18 +143,21 @@ function VehiclesPage() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <Input
-                  placeholder="Year"
+                  placeholder="Year *"
                   inputMode="numeric"
+                  required
                   value={form.year}
                   onChange={(e) => setForm({ ...form, year: e.target.value })}
                 />
                 <Input
-                  placeholder="Make"
+                  placeholder="Make *"
+                  required
                   value={form.make}
                   onChange={(e) => setForm({ ...form, make: e.target.value })}
                 />
                 <Input
-                  placeholder="Model"
+                  placeholder="Model *"
+                  required
                   value={form.model}
                   onChange={(e) => setForm({ ...form, model: e.target.value })}
                 />

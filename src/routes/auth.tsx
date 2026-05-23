@@ -187,13 +187,16 @@ function AuthPage() {
                 id="password"
                 type="password"
                 required
-                minLength={6}
+                minLength={mode === "signup" ? 8 : 6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 placeholder="••••••••"
                 className="h-11 bg-card"
               />
+              {mode === "signup" && password.length > 0 && password.length < 8 && (
+                <p className="text-xs text-destructive mt-1">Password must be at least 8 characters.</p>
+              )}
             </div>
             <Button
               type="submit"

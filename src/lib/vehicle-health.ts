@@ -170,8 +170,11 @@ export interface Reminder {
 export function computeReminders(currentKm: number | null | undefined): Reminder[] {
   if (!currentKm || currentKm <= 0) return [];
   return REMINDER_TASKS.map<Reminder>((task) => {
-    // First-cycle due odometer: round up current km to next interval boundary.
-    const due_at_km = Math.ceil(currentKm / task.interval_km) * task.interval_km;
+    // First-cycle due odometer: round up to next interval boundary.
+    // If currentKm lands exactly on a boundary, push to the NEXT interval
+    // so we never show "Overdue by 0 km".
+    const raw_due = Math.ceil(currentKm / task.interval_km) * task.interval_km;
+    const due_at_km = raw_due === currentKm ? raw_due + task.interval_km : raw_due;
     const km_remaining = due_at_km - currentKm;
     let status: ReminderStatus = "ok";
     if (km_remaining <= 0) status = "overdue";

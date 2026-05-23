@@ -57,7 +57,7 @@ interface SavedInspection {
 }
 
 function ValuationPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<ValForm>({
     year: "", make: "", model: "", mileage: "", asking_price: "", condition: "75",
@@ -67,7 +67,7 @@ function ValuationPage() {
   const [decision, setDecision] = useState<FinalDecision | null>(null);
   const [recentInspections, setRecentInspections] = useState<SavedInspection[]>([]);
 
-  useEffect(() => { if (!user) navigate({ to: "/auth" }); }, [user, navigate]);
+  useEffect(() => { if (!authLoading && !user) navigate({ to: "/auth" }); }, [authLoading, user, navigate]);
 
   useEffect(() => {
     if (!user) return;
